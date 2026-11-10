@@ -409,8 +409,9 @@ clickable mock-up are in the project folder `design/review-m3/` and `design/revi
   lifecycle callback (`onActivityPreCreated`, before the activity's `onCreate`) for every
   activity, so the main screen and the widget setup screen are covered and a phone held sideways does
   not build a landscape screen first. The manifest cannot do this, because it has one value for all
-  devices. The check is made at the start of an activity, so a foldable that is unfolded later
-  keeps the choice it started with until the next start.
+  devices. The check is made at the start of an activity. Unfolding a foldable changes the
+  smallest width, and the manifest has no `configChanges` for it, so Android recreates the activity
+  and the choice is made again (reasoned from the manifest, not tried on a device).
 - A step (swipe or arrow) slides the title and the body a short way with a fade, like the tabs, in
   month and year view (the maintainer, 2026-10-27; `AnimatedContent` keyed on `CalendarPageKey`, no
   slide when animations are off). Header and body are drawn from one `CalendarPage`, which keeps the
