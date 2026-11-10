@@ -123,11 +123,19 @@ class AppRootTest {
         waitForText("Sicherung wiederherstellen")
         compose.onNodeWithText("Zuletzt gesichert: 01.10.2026").assertIsDisplayed()
 
-        // Back to the overview and into the settings by the button there: the list, not the page.
+        // The tab bar brings back where the user was: still the backup page.
         compose.onNode(tab("Übersicht")).performClick()
         waitForText("Letzte Sicherung vor 5 Monaten")
         compose.onNode(tab("Einstellungen")).performClick()
         waitForText("Sicherung wiederherstellen")
+
+        // A button or the widget that says "settings" means the list, not the page left open.
+        compose.onNode(tab("Übersicht")).performClick()
+        waitForText("Letzte Sicherung vor 5 Monaten")
+        request = TabRequest(Tab.SETTINGS)
+        compose.waitForIdle()
+        compose.onNode(tab("Einstellungen")).assertIsSelected()
+        compose.onAllNodesWithText("Sicherung wiederherstellen").assertCountEquals(0)
     }
 
     @Test
