@@ -4,10 +4,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -123,13 +128,26 @@ class RangePickerTest {
         nextMonth()
         inPicker("Mittwoch, 7. April 2027").performClick()
 
-        inPicker("Mittwoch, 7. April 2027").assertIsDisplayed()
-        compose
-            .onNode(
-                hasContentDescription("Dienstag, 6. April 2027", substring = true) and
-                    hasAnyAncestor(hasTestTag(RANGE_PICKER_TAG)),
-            ).assertIsDisplayed()
+        // The first day is in March, so go back to see both of its sides.
+        inPicker("Vorheriger Monat").performClick()
+        inPicker("Donnerstag, 25. März 2027")
+            .assertIsSelected()
+            .assert(hasState("Erster Tag"))
+        // Karfreitag costs nothing but is inside the range: still named as a holiday and as inside.
+        inPicker("Freitag, 26. März 2027")
+            .assertIsNotSelected()
+            .assert(hasState("Im Zeitraum"))
+            .assert(hasContentDescription("Karfreitag", substring = true))
+        nextMonth()
+        inPicker("Mittwoch, 7. April 2027")
+            .assertIsSelected()
+            .assert(hasState("Letzter Tag"))
+        // Days after the last day say nothing about the range and are not selected.
+        inPicker("Donnerstag, 8. April 2027").assertIsNotSelected()
     }
+
+    private fun hasState(text: String) =
+        SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, text)
 
     @Test
     @Config(qualifiers = "de")
