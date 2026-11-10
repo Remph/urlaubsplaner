@@ -127,6 +127,9 @@
     <!-- Navigation -->
     <string name="nav_overview">Übersicht</string>
     <string name="nav_calendar">Kalender</string>
+    <!-- What TalkBack says for a tap on the open calendar tab. -->
+    <string name="nav_calendar_this_month">Zum aktuellen Monat</string>
+    <string name="nav_calendar_this_year">Zum aktuellen Jahr</string>
     <string name="back">Zurück</string>
 
     <!-- Einstellungsliste -->

@@ -39,6 +39,7 @@ class UrlaubsplanerApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        OrientationPolicy.install(this)
         // AppCompat does not remember the light/dark choice, so it is handed over at every start.
         appearanceStore.applyNightMode()
         // The widget is drawn from here too: it lives in this process while the app does.

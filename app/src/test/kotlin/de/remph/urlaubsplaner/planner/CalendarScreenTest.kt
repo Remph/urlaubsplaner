@@ -464,14 +464,24 @@ class CalendarScreenTest {
         compose.waitForIdle()
     }
 
-    /** Where the page ends and where the screen does, to see whether the page scrolls. */
+    private fun handle(expanded: Boolean) =
+        compose.onNodeWithContentDescription(
+            if (expanded) "Jahresübersicht kleiner anzeigen" else "Jahresübersicht größer anzeigen",
+        )
+
+    /**
+     * Where the page ends and where the screen does, to see whether the page scrolls. The handle
+     * is the last thing on the page while the rows are expanded (the legend is gone then).
+     */
     private fun assertPageFillsScreenWithoutScrolling() {
-        val legendBottom = compose.onNodeWithText("Geplant").getBoundsInRoot().bottom
+        val handleBottom = handle(expanded = true).getBoundsInRoot().bottom
         val screen = compose.onRoot().getBoundsInRoot().height
-        // 16 dp frame padding below the legend; the rows are whole dp, so up to 12 dp are left.
-        assertTrue("$legendBottom of $screen", legendBottom <= screen - 16.dp)
-        assertTrue("$legendBottom of $screen", legendBottom >= screen - 16.dp - 13.dp)
+        // 16 dp frame padding below the handle; the rows are whole dp, so up to 12 dp are left.
+        assertTrue("$handleBottom of $screen", handleBottom <= screen - 16.dp)
+        assertTrue("$handleBottom of $screen", handleBottom >= screen - 16.dp - 13.dp)
     }
+
+    private fun legendItems() = compose.onAllNodesWithText("Geplant")
 
     @Test
     @Config(qualifiers = "de-w411dp-h900dp")
@@ -486,12 +496,87 @@ class CalendarScreenTest {
 
     @Test
     @Config(qualifiers = "de-w411dp-h900dp")
-    fun `the legend entry for granted days takes room from the rows`() {
-        turnGrantedDaysOn()
+    fun `the legend is under the compact year, gone while the rows are expanded and back after`() {
+        showYear()
+        legendItems().assertCountEquals(1)
+        compose.onNodeWithText("Feiertag").assertExists()
+
+        expandRows()
+        legendItems().assertCountEquals(0)
+        compose.onAllNodesWithText("Feiertag").assertCountEquals(0)
+        compose.onAllNodesWithText("Schulferien").assertCountEquals(0)
+
+        handle(expanded = true).performScrollTo().performClick()
+        compose.waitForIdle()
+        legendItems().assertCountEquals(1)
+        yearGrid().assertHeightIsEqualTo(YearRowsCompact * 12)
+        // Back where it was: the legend sits under the handle, a frame gap away.
+        val below = compose.onNodeWithText("Geplant").getBoundsInRoot().top
+        assertTrue(below > handle(expanded = false).getBoundsInRoot().bottom)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the month view keeps its legend whether or not the year rows are expanded`() {
         showYear()
         expandRows()
+        compose.onNodeWithText("Monat").performClick()
+        waitForText("März 2027")
+        compose.waitForIdle()
 
-        assertExpanded()
+        compose.onAllNodesWithText("Schulferien").assertCountEquals(1)
+        compose.onAllNodesWithText("Feiertag").assertCountEquals(1)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the legend with the granted entry goes too, and the rows fill the same room`() {
+        showYear()
+        expandRows()
+        val without = gridHeight()
+        handle(expanded = true).performScrollTo().performClick()
+        compose.waitForIdle()
+        turnGrantedDaysOn()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("Genehmigt").fetchSemanticsNodes().isNotEmpty()
+        }
+        expandRows()
+
+        compose.onAllNodesWithText("Genehmigt").assertCountEquals(0)
+        assertEquals(without, gridHeight())
+        assertPageFillsScreenWithoutScrolling()
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the rows grow into the room of the legend in one move without a second jump`() {
+        showYear()
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        handle(expanded = false).performScrollTo().performClick()
+
+        val heights = mutableListOf<Float>()
+        val legendAlphas = mutableListOf<Int>()
+        repeat(120) {
+            compose.mainClock.advanceTimeByFrame()
+            heights += gridHeight().value
+            legendAlphas += legendItems().fetchSemanticsNodes().size
+        }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        val end = gridHeight().value
+
+        // Never shrinks on the way, never overshoots the end: the target did not move while the
+        // legend was leaving (it would jump up and then settle if the fit counted the legend's
+        // remaining room).
+        assertTrue("$heights", heights.zipWithNext().all { (a, b) -> b >= a - 0.01f })
+        assertTrue("$heights", heights.all { it <= end + 0.5f })
+        assertEquals(end, heights.last(), 0.5f)
+        // Settled after the spring, not still chasing a target that moves with the legend: 12
+        // frames of 16 ms (the row animation alone takes 11).
+        assertEquals("$heights", end, heights[12], 1f)
+        // The legend is there while it fades and gone at the end.
+        assertTrue("$legendAlphas", legendAlphas.first() == 1 && legendAlphas.last() == 0)
         assertPageFillsScreenWithoutScrolling()
     }
 
@@ -502,7 +587,35 @@ class CalendarScreenTest {
         expandRows()
 
         assertExpanded()
+        legendItems().assertCountEquals(0)
         assertPageFillsScreenWithoutScrolling()
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the year sliding in while expanded has no legend and keeps its rows`() {
+        runBlocking {
+            fixture.repository.saveEntitlement(
+                YearEntitlement(2026, VacationDays.of(30), VacationDays.of(0), MonthDay.of(3, 31)),
+            )
+        }
+        showYear()
+        expandRows()
+
+        compose.onNodeWithContentDescription("Vorheriges Jahr").performClick()
+        waitForText("2026")
+        compose.waitForIdle()
+
+        // 2026 has a note about unknown school holidays under the rows, so its rows are lower than
+        // 2027's; what counts is that the legend is not there and the rows are not at their least.
+        legendItems().assertCountEquals(0)
+        compose.onAllNodesWithText("Schulferien").assertCountEquals(0)
+        val grid2026 =
+            compose
+                .onNode(hasContentDescription("Jahresübersicht 2026", substring = true))
+                .getBoundsInRoot()
+                .height
+        assertTrue("$grid2026", grid2026 > YearRowsMin * 12)
     }
 
     @Test
