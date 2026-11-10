@@ -41,6 +41,9 @@ interface EntitlementDao {
 @Dao
 interface MarkedDayDao {
     /** [from] and [to] are ISO dates, which sort like dates; both ends are included. */
+    @Query("SELECT EXISTS(SELECT 1 FROM marked_day)")
+    fun observeAny(): Flow<Boolean>
+
     @Query("SELECT * FROM marked_day WHERE date BETWEEN :from AND :to ORDER BY date")
     fun observeBetween(
         from: String,

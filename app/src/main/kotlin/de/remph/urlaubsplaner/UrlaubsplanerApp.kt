@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.res.Configuration
 import de.remph.urlaubsplaner.appearance.AppearanceStore
 import de.remph.urlaubsplaner.data.BackupFileStore
+import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.CalendarFileStore
 import de.remph.urlaubsplaner.data.SchoolHolidayAsset
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
@@ -33,6 +34,10 @@ class UrlaubsplanerApp : Application() {
 
     val appearanceStore by lazy {
         AppearanceStore(getSharedPreferences(AppearanceStore.FILE_NAME, MODE_PRIVATE))
+    }
+
+    val backupStatusStore by lazy {
+        BackupStatusStore(getSharedPreferences(BackupStatusStore.FILE_NAME, MODE_PRIVATE))
     }
 
     val widgetRefresher by lazy { WidgetRefresher(this, database) }

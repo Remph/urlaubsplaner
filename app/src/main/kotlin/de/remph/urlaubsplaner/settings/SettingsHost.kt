@@ -46,10 +46,12 @@ fun SettingsHost(
     appearanceStore: AppearanceStore,
     showMessage: (String) -> Unit,
     outerPadding: PaddingValues,
+    startPage: SettingsPage = SettingsPage.LIST,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val ui = state ?: return
-    var page by rememberSaveable { mutableStateOf(SettingsPage.LIST) }
+    // [startPage] only counts the first time: a rotation brings back the page the user is on.
+    var page by rememberSaveable { mutableStateOf(startPage) }
 
     val leave = {
         // The list shows the current year's numbers, so the year stepper goes back to it.

@@ -10,6 +10,7 @@ import de.remph.urlaubsplaner.core.balance.YearEntitlement
 import de.remph.urlaubsplaner.core.holidays.Bundesland
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHolidayData
 import de.remph.urlaubsplaner.core.settings.UserSettings
+import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
 import de.remph.urlaubsplaner.data.UserDataRepository
 import kotlinx.coroutines.Dispatchers
@@ -70,8 +71,16 @@ class PlannerFixture(
     // fails whichever test runs next in the same JVM.
     private val viewModels = ViewModelStore()
 
+    /** Fresh preferences per fixture: the app's own would carry the date of one test into the next. */
+    val backupStatus =
+        BackupStatusStore(
+            ApplicationProvider
+                .getApplicationContext<Context>()
+                .getSharedPreferences("backup-status-${System.nanoTime()}", Context.MODE_PRIVATE),
+        )
+
     fun viewModel() =
-        PlannerViewModel(repository, lazyOf(schoolHolidays), clock).also {
+        PlannerViewModel(repository, lazyOf(schoolHolidays), clock, backupStatus).also {
             viewModels.put("planner${viewModels.keys().size}", it)
         }
 

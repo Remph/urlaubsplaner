@@ -89,6 +89,15 @@
         <item quantity="one">%d Jahr mit Urlaubsanspruch</item>
         <item quantity="other">%d Jahre mit Urlaubsanspruch</item>
     </plurals>
+    <string name="backup_last">Zuletzt gesichert: %1$s</string>
+    <string name="backup_never">Noch keine Sicherung</string>
+    <!-- Die ruhige Zeile auf der Übersicht -->
+    <plurals name="backup_hint_old">
+        <item quantity="one">Letzte Sicherung vor %d Monat</item>
+        <item quantity="other">Letzte Sicherung vor %d Monaten</item>
+    </plurals>
+    <string name="backup_hint_never">Noch keine Sicherung gespeichert</string>
+    <string name="backup_hint_open">Datensicherung öffnen</string>
     <string name="notice_saved">Gespeichert.</string>
     <string name="notice_exported">Sicherung gespeichert.</string>
     <string name="notice_imported">Sicherung wiederhergestellt.</string>

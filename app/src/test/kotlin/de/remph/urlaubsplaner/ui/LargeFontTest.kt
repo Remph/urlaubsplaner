@@ -63,6 +63,7 @@ class LargeFontTest {
                 BackupFileStore(context.contentResolver),
                 CalendarExporter(fixture.repository, CalendarFileStore(context), fixture.clock),
                 fixture.clock,
+                fixture.backupStatus,
             )
         val appearance = AppearanceStore(context.getSharedPreferences("large-font-test", 0))
         compose.setContent {

@@ -18,6 +18,8 @@ import androidx.compose.ui.res.stringResource
 import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.backup.BackupFile
 import de.remph.urlaubsplaner.core.backup.BackupSummary
+import de.remph.urlaubsplaner.planner.currentLocale
+import de.remph.urlaubsplaner.planner.mediumText
 
 /** Save everything to a file the user picks, or replace everything from one. */
 @Composable
@@ -43,6 +45,15 @@ fun BackupPage(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // Nothing to say on a fresh install, where restoring is the first step.
+        if (ui.settings.land != null || ui.lastBackup != null) {
+            Text(
+                ui.lastBackup?.let {
+                    stringResource(R.string.backup_last, it.mediumText(currentLocale()))
+                } ?: stringResource(R.string.backup_never),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
         // Saving is pointless before anything is entered; restoring is how a new phone starts.
         if (ui.settings.land != null) {
             OutlinedButton(

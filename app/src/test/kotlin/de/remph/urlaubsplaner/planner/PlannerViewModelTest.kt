@@ -2,12 +2,15 @@ package de.remph.urlaubsplaner.planner
 
 import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.remph.urlaubsplaner.core.backup.BackupHint
 import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.VacationDays
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -20,7 +23,7 @@ import org.junit.runner.RunWith
 import java.time.LocalDate
 import java.time.YearMonth
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class PlannerViewModelTest {
     private var fixture = PlannerFixture()
@@ -38,6 +41,14 @@ class PlannerViewModelTest {
         viewModels.put("planner", model)
         return model
     }
+
+    private fun viewModelWith(clock: java.time.Clock) =
+        PlannerViewModel(
+            fixture.repository,
+            lazyOf(fixture.schoolHolidays),
+            clock,
+            fixture.backupStatus,
+        )
 
     /** Room reports from its own threads, so a value arrives a moment after the change. */
     private fun <T : Any> await(
@@ -191,10 +202,81 @@ class PlannerViewModelTest {
     }
 
     @Test
+    fun `no backup hint while nothing is marked, however long the app has run`() {
+        val clock = SteppingClock(fixture.clock)
+        val model = viewModelWith(clock)
+        viewModels.put("planner", model)
+        val seen = mutableListOf<Any?>()
+        runBlocking {
+            val job =
+                kotlinx.coroutines.GlobalScope.launch {
+                    model.backupHint.collect { seen += it }
+                }
+            clock.today = "2028-03-10"
+            model.refreshToday()
+            delay(200)
+            job.cancel()
+        }
+
+        assertTrue(seen.all { it == null })
+        assertNull(fixture.backupStatus.state.value.marksSince)
+    }
+
+    @Test
+    fun `never saved days get the hint 14 days after the first look, and a backup ends it`() {
+        fixture.fill()
+        val clock = SteppingClock(fixture.clock)
+        val model = viewModelWith(clock)
+        viewModels.put("planner", model)
+        val seen = mutableListOf<BackupHint?>()
+        val job = kotlinx.coroutines.GlobalScope.launch { model.backupHint.collect { seen += it } }
+        try {
+            // The first look at the marked days only starts the wait.
+            runBlocking {
+                withTimeout(5_000) {
+                    while (fixture.backupStatus.state.value.marksSince ==
+                        null
+                    ) {
+                        delay(10)
+                    }
+                }
+            }
+            assertEquals(fixture.date("2027-03-10"), fixture.backupStatus.state.value.marksSince)
+            assertNull(model.backupHint.value)
+
+            clock.today = "2027-03-23"
+            model.refreshToday()
+            runBlocking { delay(200) }
+            assertNull(model.backupHint.value)
+
+            clock.today = "2027-03-24"
+            model.refreshToday()
+            assertEquals(BackupHint.Never, await(model.backupHint) { it == BackupHint.Never })
+
+            fixture.backupStatus.recordBackup(fixture.date("2027-03-24"))
+            runBlocking { withTimeout(5_000) { while (model.backupHint.value != null) delay(10) } }
+        } finally {
+            job.cancel()
+        }
+    }
+
+    @Test
+    fun `an old backup gives the months, with or without marked days`() {
+        fixture.backupStatus.recordBackup(fixture.date("2026-10-01"))
+        val model = viewModel()
+        val job = kotlinx.coroutines.GlobalScope.launch { model.backupHint.collect {} }
+        try {
+            assertEquals(BackupHint.Old(5), await(model.backupHint))
+        } finally {
+            job.cancel()
+        }
+    }
+
+    @Test
     fun `the overview follows the date after refreshToday`() {
         fixture.fill()
         val clock = SteppingClock(fixture.clock)
-        val model = PlannerViewModel(fixture.repository, lazyOf(fixture.schoolHolidays), clock)
+        val model = viewModelWith(clock)
         viewModels.put("planner", model)
         assertEquals(fixture.date("2027-03-10"), await(model.overview) { it.balance != null }.today)
 

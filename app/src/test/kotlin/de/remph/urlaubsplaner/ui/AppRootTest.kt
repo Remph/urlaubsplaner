@@ -18,6 +18,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.remph.urlaubsplaner.appearance.AppearanceStore
@@ -67,6 +68,7 @@ class AppRootTest {
                 BackupFileStore(context.contentResolver),
                 CalendarExporter(fixture.repository, CalendarFileStore(context), fixture.clock),
                 fixture.clock,
+                fixture.backupStatus,
             )
         val appearance = AppearanceStore(context.getSharedPreferences("app-root-test", 0))
         planner = fixture.viewModel()
@@ -105,6 +107,27 @@ class AppRootTest {
 
         compose.onNode(tab("Einstellungen")).assertIsSelected()
         waitForText("Bundesland wählen")
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the backup line opens the backup page, and the next visit starts on the list`() {
+        fixture.fill()
+        fixture.backupStatus.recordBackup(java.time.LocalDate.of(2026, 10, 1))
+        waitForText("Letzte Sicherung vor 5 Monaten")
+
+        compose.onNodeWithText("Letzte Sicherung vor 5 Monaten").performScrollTo().performClick()
+
+        compose.waitForIdle()
+        compose.onNode(tab("Einstellungen")).assertIsSelected()
+        waitForText("Sicherung wiederherstellen")
+        compose.onNodeWithText("Zuletzt gesichert: 01.10.2026").assertIsDisplayed()
+
+        // Back to the overview and into the settings by the button there: the list, not the page.
+        compose.onNode(tab("Übersicht")).performClick()
+        waitForText("Letzte Sicherung vor 5 Monaten")
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Sicherung wiederherstellen")
     }
 
     @Test

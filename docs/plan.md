@@ -573,6 +573,30 @@ Known snags:
 - Instrumented tests (`app/src/androidTest`) need an emulator; see "Instrumented tests (0.9.2)" below. The cloud can only compile them (`assembleDebugAndroidTest`).
 - The launcher icon exists since M5 (sun over day tiles, adaptive with a themed monochrome layer; mock-ups in the project folder `design/icon/`).
 
+### Backup reminder (0.11.0, S1)
+
+Android's own backup is off, so a lost or replaced phone loses everything unless a backup file was
+saved. A quiet reminder, no notification and no new permission:
+
+- `core.backup.BackupReminder` decides (unit-tested, injected dates): a hint when the last backup is
+  more than 90 days old (`BackupHint.Old(months)`), or, when there was never one, 14 days after the
+  app first saw marked days (`BackupHint.Never`). Nothing is shown while nothing is marked.
+- `data/BackupStatusStore` keeps two dates in private preferences (`backup_status`): `last_backup`
+  (set when "Sicherung speichern" has written the file; a restore does not count) and `marks_since`
+  (the first day the overview saw marked days; the database does not know when a day was marked).
+  Not in Room, not in the backup file: no migration, no format change. An unreadable value reads as
+  unknown.
+- `PlannerViewModel.backupHint` combines the store, "any marked day" (`MarkedDayDao.observeAny`, a
+  query only) and today. The overview shows one line at the very bottom (the maintainer's choice,
+  2026-11-10, over a place under the numbers or under the trip card): "Letzte Sicherung vor 4
+  Monaten" or "Noch keine Sicherung gespeichert", the whole line a 48 dp button (label "Datensicherung
+  öffnen"). It opens the settings on the backup page (`SettingsHost(startPage)`); the next ordinary
+  visit to the settings starts on the list again.
+- The backup page shows "Zuletzt gesichert: 03.11.2026" or "Noch keine Sicherung" (not on a fresh
+  install, where restoring is the first step).
+- Wording is in `strings.xml` (`backup_hint_*`, `backup_last`, `backup_never`); the two day counts
+  are `BackupReminder.OLD_AFTER_DAYS` and `FIRST_HINT_AFTER_DAYS`.
+
 ## Status
 
 - [x] M0 Skeleton (PR #3, merged 2026-10-25)

@@ -40,6 +40,7 @@ import de.remph.urlaubsplaner.planner.CalendarScreen
 import de.remph.urlaubsplaner.planner.OverviewScreen
 import de.remph.urlaubsplaner.planner.PlannerViewModel
 import de.remph.urlaubsplaner.settings.SettingsHost
+import de.remph.urlaubsplaner.settings.SettingsPage
 import de.remph.urlaubsplaner.settings.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -82,8 +83,11 @@ fun AppRoot(
     // The old settings screen is still composed while it fades out and saves its state when it
     // goes, so removing the state is not enough; a new key makes the next settings screen start fresh.
     var settingsGeneration by rememberSaveable { mutableIntStateOf(0) }
+    // The page a fresh settings screen opens on: the list, or the backup page from the overview's hint.
+    var settingsStart by rememberSaveable { mutableStateOf(SettingsPage.LIST) }
     val show = { target: Tab ->
         if (target == Tab.SETTINGS && tab != Tab.SETTINGS) {
+            settingsStart = SettingsPage.LIST
             tabState.removeState(stateKey(Tab.SETTINGS, settingsGeneration))
             settingsGeneration++
         }
@@ -127,6 +131,10 @@ fun AppRoot(
                             plannerViewModel,
                             padding,
                             onOpenSettings = { show(Tab.SETTINGS) },
+                            onOpenBackup = {
+                                show(Tab.SETTINGS)
+                                settingsStart = SettingsPage.BACKUP
+                            },
                             onOpenMonth = {
                                 plannerViewModel.showMode(CalendarMode.MONTH)
                                 plannerViewModel.showMonth(it)
@@ -148,7 +156,13 @@ fun AppRoot(
                     }
 
                     Tab.SETTINGS -> {
-                        SettingsHost(settingsViewModel, appearanceStore, showMessage, padding)
+                        SettingsHost(
+                            settingsViewModel,
+                            appearanceStore,
+                            showMessage,
+                            padding,
+                            settingsStart,
+                        )
                     }
                 }
             }
