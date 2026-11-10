@@ -227,6 +227,12 @@
     <string name="mark_full">Ganzer Tag</string>
     <string name="mark_half">Halber Tag</string>
     <string name="until">Bis: %1$s</string>
+    <string name="range_title">Bis wann?</string>
+    <string name="range_from">Von %1$s</string>
+    <string name="range_first_day">Erster Tag</string>
+    <string name="range_last_day">Letzter Tag</string>
+    <string name="range_inside">Im Zeitraum</string>
+    <string name="range_free_note">Arbeitsfreie Tage und Feiertage zählen nicht mit.</string>
     <string name="mark_save">Eintragen</string>
     <string name="mark_change">Ändern</string>
     <string name="mark_remove">Entfernen</string>

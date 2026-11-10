@@ -15,7 +15,7 @@ the maintainer asks. The rules in `CLAUDE.md` apply unchanged.
 | 25 | Lock to portrait on phones only (smallest width under 600 dp). Tablets keep rotating, which leaves room for a tablet layout later (parked 26) | parked 25 | `MainActivity` (the manifest cannot tell a phone from a tablet: set `requestedOrientation` at start from `smallestScreenWidthDp`), `WidgetConfigActivity` | none |
 | 28 | Calendar swipe that follows the finger and snaps (a pager) | parked 28 | `CalendarScreen` (`ScreenFrame` + `Modifier.swipeToStep` in `SwipeToStep.kt`, `AnimatedContent` keyed on `CalendarPage.generation`), `CalendarPage.kt`, `Highlight.kt` | none |
 | S1 | Backup reminder: the backup page shows when the last backup was saved, and after 3 months without one a quiet line on the Übersicht reminds you | Claude's suggestion, accepted 2026-11-10 | `settings/` backup page, `OverviewScreen`, a small local store like `appearance/AppearanceStore.kt` | none in Room or the backup file (see below) |
-| 24 | Clearer date picker that makes the picked range obvious | parked 24 | `planner/DaySheet.kt` (`EndDatePicker`: M3 `DatePicker` in a `DatePickerDialog`, end day in the same year as the start) | none |
+| 24 | Clearer date picker that makes the picked range obvious | parked 24 | `planner/DaySheet.kt` (`EndDatePicker`: M3 `DatePicker` in a `DatePickerDialog`, end day in the same year as the start; replaced by `planner/RangePicker.kt`, see "Decided in the design round") | none |
 | S2 | Mark a range by long-pressing a day in the month view and dragging across the days | Claude's suggestion, accepted 2026-11-10 | `DayCells.kt` / `MonthGrid`, `PlannerViewModel` (the "Bis" range of the day sheet already marks ranges) | none |
 
 Not in 0.11.0: app shortcuts on the app icon (suggestion S3; the maintainer parked it for 1.0.0 on
@@ -70,6 +70,32 @@ What the code and the answers say about each:
     ticks. A long press is needed so the drag doesn't fight the pager swipe (28) or the scroll. The
     range can go across weeks, and stops at the month edge: across months is the picker's job. TalkBack
     users keep the sheet and the picker, so drag is never the only way.
+
+### Decided in the design round (T3, 2026-11-10)
+
+Mock-ups: `design/0-11-range/` in the project folder (`index.html` and one PNG per screen). The
+maintainer answered three cards the same evening and took the recommended option each time.
+
+- **24, built in T3:** an own month grid in a dialog ("Bis wann?", `RangePickerDialog` in
+  `planner/RangePicker.kt`), not the Material 3 `DateRangePicker` and not a styled single picker.
+  The M3 `DatePicker` has no slot for own day tiles, so a "styled single picker" would have been an
+  own grid anyway. The grid uses the calendar's tiles (holidays gold, school holidays lilac and a
+  bar, days already marked with a dot). The first day stays the day that was tapped (days before it
+  are off), the first day and last day are filled, the days between are tinted, a holiday inside
+  stays gold with a ring because it costs nothing. The arrows stop at the first day's month and at
+  December. Under the grid the cost and the days left read as in the sheet ("Kostet 8 Urlaubstage,
+  danach noch 25 übrig"), plus a note about days that cost nothing. OK hands the end day to the sheet.
+- **S2, built in T5 after the pager (T4); the maintainer chose these:**
+  - Letting go opens the day sheet with the range filled in (start as the title, "Bis" set, cost
+    shown). No popup and no marking at once. The sheet needs one optional parameter for the end day
+    for this (`initialEnd`), which T3 did not add because nothing used it yet.
+  - The range stops at the month's first and last day. No paging while dragging (that would fight
+    the pager). Dragging backwards works: the earlier day becomes the start of the range.
+  - Not decided by a card, so T5 starts from this and asks only if it turns out wrong: long press
+    with the system's long-press time; a tick (`SegmentTick`) for every new day and one `Reject` at
+    the month edge; a small bubble above the finger with the cost ("4 Tage"); the range looks as in
+    the picker (reuse the picker's tile colours instead of writing them twice); TalkBack users keep
+    the sheet and the picker. Handover for T5: `handover/0-11-0-t5-drag-to-mark.md`.
 
 ## Order and threads
 
