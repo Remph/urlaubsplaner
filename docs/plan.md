@@ -61,6 +61,10 @@ After 0.9.x: the features of 0.10.0 (parked items 18 to 23) are built on the int
 `release/0.10.0`; order, threads, the Room and backup version steps and the release steps are in
 `docs/milestone-0.10.0.md`.
 
+After 0.10.x: 0.11.0 (the visible features: legend, Kalender tab, portrait on phones, pager swipe,
+backup reminder, range picker and drag to mark) is built on `release/0.11.0`, planned in
+`docs/milestone-0.11.0.md`. 1.0.0 follows as the stable release; its candidates are listed there.
+
 Language (the maintainer, 2026-10-25): the app language is a setting, not only the system language: System
 (default), Deutsch, English. If the system language is neither, German applies (the default
 resources). Plan: `androidx.appcompat` `AppCompatDelegate.setApplicationLocales()` (works back to
