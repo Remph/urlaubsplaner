@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
@@ -70,6 +73,13 @@ internal enum class RangeRole {
     AFTER_END,
 }
 
+internal val RangeRole.isEdge: Boolean get() = this == RangeRole.START || this == RangeRole.END
+
+/** Whether the day is part of the range, as opposed to before or after it. */
+internal val RangeRole.inRange: Boolean get() =
+    this != RangeRole.BEFORE_START &&
+        this != RangeRole.AFTER_END
+
 internal fun rangeRole(
     date: LocalDate,
     start: LocalDate,
@@ -82,6 +92,82 @@ internal fun rangeRole(
         date.isBefore(end) -> RangeRole.INSIDE
         else -> RangeRole.AFTER_END
     }
+
+/**
+ * The tile of a day in a range, one choice for the picker and for the drag in the month view.
+ * The ends are the strongest thing a day can be there, then a holiday (it stays gold inside the
+ * range, with a ring, because it costs nothing), then the tint of the range. Anything else is
+ * [otherwise]: the colour the caller's own tile has.
+ */
+internal fun rangeFill(
+    role: RangeRole,
+    look: DayLook,
+    colors: DayColors,
+    scheme: ColorScheme,
+    otherwise: Color,
+): Color =
+    when {
+        role.isEdge -> scheme.primary
+        look.holiday -> colors.holiday
+        role == RangeRole.INSIDE -> scheme.primaryContainer
+        else -> otherwise
+    }
+
+/** The day number's colour on the tile [rangeFill] chose. */
+internal fun rangeText(
+    role: RangeRole,
+    look: DayLook,
+    colors: DayColors,
+    scheme: ColorScheme,
+    otherwise: Color,
+): Color =
+    when {
+        role.isEdge -> scheme.onPrimary
+        look.holiday -> colors.onHoliday
+        role == RangeRole.INSIDE -> scheme.onPrimaryContainer
+        else -> otherwise
+    }
+
+/** A holiday inside the range keeps its gold and gets a ring, to say it is in the range but costs nothing. */
+internal fun rangeRing(
+    role: RangeRole,
+    look: DayLook,
+): Boolean = role == RangeRole.INSIDE && look.holiday
+
+/**
+ * What is drawn on a tile in a range besides the number: the school holiday bar, and a dot for a
+ * day that is marked already, because the tile's fill now says "in the range".
+ */
+@Composable
+internal fun BoxScope.RangeTileDetails(
+    look: DayLook,
+    edge: Boolean,
+    schoolBar: Boolean,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val colors = dayColors()
+    if (schoolBar) {
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 4.dp)
+                .size(width = 22.dp, height = 3.dp)
+                .background(
+                    if (edge) scheme.onPrimary else colors.schoolBar,
+                    RoundedCornerShape(2.dp),
+                ),
+        )
+    }
+    if (look.mark != null) {
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = if (schoolBar) 9.dp else 5.dp)
+                .size(5.dp)
+                .background(if (edge) scheme.onPrimary else scheme.primary, CircleShape),
+        )
+    }
+}
 
 /** The months the picker can show: the first day's month to December, because the balance is per year. */
 internal fun pickerMonths(start: LocalDate): ClosedRange<YearMonth> =
@@ -265,26 +351,24 @@ private fun PickerCell(
     val colors = dayColors()
     val scheme = MaterialTheme.colorScheme
     val look = view.look(date)
-    val edge = role == RangeRole.START || role == RangeRole.END
+    val edge = role.isEdge
     val inside = role == RangeRole.INSIDE
-    // The ends are the strongest thing a day can be here, then a holiday (it stays gold inside the
-    // range, with a ring, because it costs nothing), then the tint of the range, then the calendar's own tile.
     val fill =
-        when {
-            edge -> scheme.primary
-            look.holiday -> colors.holiday
-            inside -> scheme.primaryContainer
-            look.school -> colors.school
-            else -> scheme.surfaceContainerLow
-        }
+        rangeFill(
+            role,
+            look,
+            colors,
+            scheme,
+            otherwise = if (look.school) colors.school else scheme.surfaceContainerLow,
+        )
     val textColor =
-        when {
-            edge -> scheme.onPrimary
-            look.holiday -> colors.onHoliday
-            inside -> scheme.onPrimaryContainer
-            !look.workDay -> colors.weekend
-            else -> scheme.onSurface
-        }
+        rangeText(
+            role,
+            look,
+            colors,
+            scheme,
+            otherwise = if (!look.workDay) colors.weekend else scheme.onSurface,
+        )
     val shape = MaterialTheme.shapes.large
     val schoolBar = look.school && (edge || inside || look.holiday || look.mark != null)
     val description = dayDescription(view, date, look, locale)
@@ -314,7 +398,7 @@ private fun PickerCell(
                 .clip(shape)
                 .background(fill)
                 .then(
-                    if (inside && look.holiday) {
+                    if (rangeRing(role, look)) {
                         Modifier.border(2.dp, scheme.primary, shape)
                     } else {
                         Modifier
@@ -328,28 +412,7 @@ private fun PickerCell(
                 fontWeight = if (edge) FontWeight.Bold else FontWeight.Normal,
                 style = MaterialTheme.typography.bodyLarge,
             )
-            if (schoolBar) {
-                Box(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 4.dp)
-                        .size(width = 22.dp, height = 3.dp)
-                        .background(
-                            if (edge) scheme.onPrimary else colors.schoolBar,
-                            RoundedCornerShape(2.dp),
-                        ),
-                )
-            }
-            // A day that is marked already: a dot, because the tile's fill now says "in the range".
-            if (look.mark != null) {
-                Box(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = if (schoolBar) 9.dp else 5.dp)
-                        .size(5.dp)
-                        .background(if (edge) scheme.onPrimary else scheme.primary, CircleShape),
-                )
-            }
+            RangeTileDetails(look, edge, schoolBar)
         }
     }
 }

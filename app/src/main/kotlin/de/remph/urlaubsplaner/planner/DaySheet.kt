@@ -57,6 +57,8 @@ fun DaySheet(
     date: LocalDate,
     viewModel: PlannerViewModel,
     onDismiss: () -> Unit,
+    /** The "Bis" day the sheet opens with: the end of a run dragged across the month view. */
+    initialEnd: LocalDate = date,
 ) {
     // While it slides away the sheet keeps showing the day as it was tapped, not the days just
     // stored (the Entfernen button would vanish and the sheet shrink half way down).
@@ -69,7 +71,7 @@ fun DaySheet(
     // The switch is for days still to come; today and the past are taken, whatever it says.
     val showGranted = shown.grantedEnabled && date.isAfter(shown.today)
     var granted by remember(date) { mutableStateOf(shown.isGranted(date)) }
-    var end by remember(date) { mutableStateOf(date) }
+    var end by remember(date) { mutableStateOf(initialEnd) }
     var picking by remember { mutableStateOf(false) }
     val days = shown.costlyDays(date, end)
     val cost = days.fold(VacationDays.ZERO) { sum, day -> sum + shown.cost(day, mark) }
