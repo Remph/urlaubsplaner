@@ -69,10 +69,10 @@ class PlannerViewModelTest {
         val view =
             runBlocking {
                 withTimeout(5_000) {
-                    var read = model.calendar.value
+                    var read = model.calendarView(2027).value
                     while (read == null) {
                         delay(10)
-                        read = model.calendar.value
+                        read = model.calendarView(2027).value
                     }
                     read
                 }
@@ -157,17 +157,59 @@ class PlannerViewModelTest {
     }
 
     @Test
-    fun `the calendar loads the year of the month it shows`() {
+    fun `a calendar page reads the view of its own year whatever month is shown`() {
         fixture.fill()
         val model = viewModel()
-        await(model.calendar) { it.year == 2027 && it.balance != null }
+        await(model.calendarView(2027)) { it.balance != null }
 
-        model.showMonth(YearMonth.of(2028, 1))
-        val next = await(model.calendar) { it.year == 2028 }
+        val next = await(model.calendarView(2028))
+        val same = await(model.calendarView(2027)) { it.balance != null }
 
         assertEquals(2028, next.year)
         assertNull(next.balance)
+        assertEquals(2027, same.year)
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
     }
+
+    @Test
+    fun `the year next to the shown month is read ahead before a finger drags its page in`() {
+        fixture.fill()
+        val model = viewModel()
+        await(model.overview) { it.balance != null }
+        model.showMonth(YearMonth.of(2027, 12))
+
+        // Nothing here collects 2028: only the ViewModel's own read-ahead can have it ready.
+        assertTrue(valueSoon(model, 2028) != null)
+        // March is two years from nothing: neither year is far, but 2026 is not next to it.
+        assertNull(model.calendarView(2026).value)
+    }
+
+    @Test
+    fun `in the year view the years on both sides are read ahead`() {
+        fixture.fill()
+        val model = viewModel()
+        await(model.overview) { it.balance != null }
+
+        model.showMode(CalendarMode.YEAR)
+
+        assertTrue(valueSoon(model, 2026) != null)
+        assertTrue(valueSoon(model, 2028) != null)
+    }
+
+    private fun valueSoon(
+        model: PlannerViewModel,
+        year: Int,
+    ): YearView? =
+        runBlocking {
+            withTimeout(10_000) {
+                var read = model.calendarView(year).value
+                while (read == null) {
+                    delay(10)
+                    read = model.calendarView(year).value
+                }
+                read
+            }
+        }
 
     @Test
     fun `the calendar never goes before 2019 or past next year`() {
@@ -187,7 +229,7 @@ class PlannerViewModelTest {
         assertFalse(model.canStep(1))
         // The first year loads without asking the rules for 2018.
         model.showMonth(YearMonth.of(2019, 1))
-        assertEquals(2019, await(model.calendar) { it.year == 2019 }.year)
+        assertEquals(2019, await(model.calendarView(2019)).year)
     }
 
     @Test

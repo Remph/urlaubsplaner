@@ -46,6 +46,19 @@ What the code and the answers say about each:
   settings. With portrait locked (25) on phones, landscape is only a tablet check. Design question
   first: one shared pager for month and year (recommended) or only months; and how far neighbour
   pages are drawn (recommended: the next page appears only while you drag, no peeking).
+- **28, as built (T4, `feature/0-11-pager-swipe`).** One `HorizontalPager` for month and year
+  (made again when the mode changes), no peeking: the next page shows only while a finger drags.
+  The ViewModel stays the truth for month and mode; `PagerFollowsViewModel` in `CalendarScreen`
+  scrolls the pager when the arrows or "today" change the month, and sets the month when a swipe
+  has settled (with the tick; the arrows have none). Every page reads the view of its own year
+  (`PlannerViewModel.calendarView(year)`), and the ViewModel keeps the years next to the page in
+  view read ahead, so a page dragged in from December to January is not blank. This replaced
+  `CalendarPage`, its `generation` and the `AnimatedContent` slide. The header stays; each page
+  scrolls on its own (a pager around the page's scroll, not inside it, or TalkBack would scroll
+  the pager when it reaches for an item below the screen). The title moves with the pager.
+  A swipe past the first or last month stretches the page and gives the "no" tick. The decision
+  was asked of the maintainer on a card (recommended option built; the card's answer is noted in
+  the PR).
 - **S1.** The last-backup date is a fact about this phone, not user data: it goes into a small local
   store (SharedPreferences or DataStore like `AppearanceStore`), not into Room and not into the backup
   file, so no migration and no backup format change. It is set when "Sicherung speichern" succeeds.
