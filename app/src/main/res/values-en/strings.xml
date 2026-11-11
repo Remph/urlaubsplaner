@@ -136,6 +136,9 @@
     <!-- Navigation -->
     <string name="nav_overview">Overview</string>
     <string name="nav_calendar">Calendar</string>
+    <!-- What TalkBack says for a tap on the open calendar tab. -->
+    <string name="nav_calendar_this_month">Go to this month</string>
+    <string name="nav_calendar_this_year">Go to this year</string>
     <string name="back">Back</string>
 
     <!-- Settings list -->

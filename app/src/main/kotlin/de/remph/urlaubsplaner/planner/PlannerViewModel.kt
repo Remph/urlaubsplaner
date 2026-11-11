@@ -131,6 +131,14 @@ class PlannerViewModel(
         shownMonth.value = month.coerceIn(firstMonth, lastMonth)
     }
 
+    /**
+     * Back to the current month; in the year view that is the current year, because the year view
+     * is the year of the month it holds. The mode stays. Nothing happens when it is already there.
+     */
+    fun showToday() {
+        showMonth(YearMonth.from(today.value))
+    }
+
     fun showMode(mode: CalendarMode) {
         shownMode.value = mode
     }

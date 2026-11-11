@@ -273,6 +273,35 @@ class PlannerViewModelTest {
     }
 
     @Test
+    fun `showToday goes back to the current month and keeps the mode`() {
+        val clock = SteppingClock(fixture.clock)
+        val model = viewModelWith(clock)
+        viewModels.put("planner", model)
+
+        model.showMonth(YearMonth.of(2027, 9))
+        model.showToday()
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+        assertEquals(CalendarMode.MONTH, model.calendarMode.value)
+
+        // The year view holds the year of the month, so today's month is this year there.
+        model.showMode(CalendarMode.YEAR)
+        model.showMonth(YearMonth.of(2028, 6))
+        model.showToday()
+        assertEquals(2027, model.calendarMonth.value.year)
+        assertEquals(CalendarMode.YEAR, model.calendarMode.value)
+
+        // Already there: nothing changes.
+        model.showToday()
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+
+        // After the date moved on while the app stayed in memory, today is the new date.
+        clock.today = "2028-01-02"
+        model.refreshToday()
+        model.showToday()
+        assertEquals(YearMonth.of(2028, 1), model.calendarMonth.value)
+    }
+
+    @Test
     fun `the overview follows the date after refreshToday`() {
         fixture.fill()
         val clock = SteppingClock(fixture.clock)

@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -26,6 +27,7 @@ import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.MarkedDays
 import de.remph.urlaubsplaner.data.BackupFileStore
 import de.remph.urlaubsplaner.data.CalendarFileStore
+import de.remph.urlaubsplaner.planner.CalendarMode
 import de.remph.urlaubsplaner.planner.PlannerFixture
 import de.remph.urlaubsplaner.planner.PlannerViewModel
 import de.remph.urlaubsplaner.settings.CalendarExporter
@@ -145,6 +147,105 @@ class AppRootTest {
 
         compose.onNode(tab("Kalender")).assertIsSelected()
         waitForText("Einstellungen öffnen")
+    }
+
+    private fun openCalendar(name: String = "Kalender") {
+        compose.onNode(tab(name)).performClick()
+        compose.waitForIdle()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a second tap on the open calendar tab goes back to this month`() {
+        openCalendar()
+        planner.showMonth(YearMonth.of(2027, 9))
+        compose.waitForIdle()
+
+        compose.onNode(tab("Kalender")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2027, 3), planner.calendarMonth.value)
+        assertEquals(CalendarMode.MONTH, planner.calendarMode.value)
+        compose.onNode(tab("Kalender")).assertIsSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `in the year view the second tap goes back to this year and keeps the view`() {
+        openCalendar()
+        planner.showMode(CalendarMode.YEAR)
+        planner.showMonth(YearMonth.of(2028, 6))
+        compose.waitForIdle()
+
+        compose.onNode(tab("Kalender")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(2027, planner.calendarMonth.value.year)
+        assertEquals(CalendarMode.YEAR, planner.calendarMode.value)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the first tap on the calendar tab opens it where it was left`() {
+        planner.showMonth(YearMonth.of(2027, 9))
+
+        compose.onNode(tab("Kalender")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2027, 9), planner.calendarMonth.value)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a second tap on the other tabs changes nothing`() {
+        planner.showMonth(YearMonth.of(2027, 9))
+        compose.onNode(tab("Übersicht")).performClick()
+        compose.onNode(tab("Einstellungen")).performClick()
+        compose.onNode(tab("Einstellungen")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2027, 9), planner.calendarMonth.value)
+        compose.onNode(tab("Einstellungen")).assertIsSelected()
+    }
+
+    private fun clickLabel(tab: SemanticsMatcher) =
+        compose
+            .onNode(tab)
+            .fetchSemanticsNode()
+            .config
+            .let {
+                if (SemanticsActions.OnClick in
+                    it
+                ) {
+                    it[SemanticsActions.OnClick].label
+                } else {
+                    null
+                }
+            }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `TalkBack hears what a tap on the open calendar tab does`() {
+        openCalendar()
+        assertEquals("Zum aktuellen Monat", clickLabel(tab("Kalender")))
+
+        planner.showMode(CalendarMode.YEAR)
+        compose.waitForIdle()
+        assertEquals("Zum aktuellen Jahr", clickLabel(tab("Kalender")))
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `the English action label says this month`() {
+        openCalendar("Calendar")
+        assertEquals("Go to this month", clickLabel(tab("Calendar")))
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the calendar tab has no action label while another tab is open`() {
+        assertEquals(null, clickLabel(tab("Kalender")))
+        assertEquals(null, clickLabel(tab("Einstellungen")))
     }
 
     @Test

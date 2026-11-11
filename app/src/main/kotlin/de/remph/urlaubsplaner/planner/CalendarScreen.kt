@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +14,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -40,7 +43,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -63,6 +69,7 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.floor
+import kotlin.math.roundToInt
 
 /**
  * The calendar: one month with every day tappable, or the whole year at a glance. Tapping a
@@ -215,7 +222,14 @@ private fun CalendarBody(
     // after a switch from the month view (whose sizes are not the year's), the last one counts.
     var bodyPx by remember(page.mode) { mutableIntStateOf(0) }
     var gridPx by remember(page.mode) { mutableIntStateOf(0) }
-    val measured = if (bodyPx > 0 && gridPx > 0) bodyPx - gridPx else -1
+    // The legend leaves while the rows are expanded, so it is not part of what the rows have to
+    // leave room for. Its height as laid out right now is taken off the measure: the legend fades
+    // and shrinks with the rows, and the room it still holds must not move the target of that
+    // very animation (the rows would chase it and jump twice).
+    var legendPx by remember(page.mode) { mutableIntStateOf(0) }
+    val legendShown by animateFloatAsState(if (rowsExpanded) 0f else 1f, label = "legend")
+    val measured =
+        if (bodyPx > 0 && gridPx > 0) bodyPx - gridPx - legendPx else -1
     SideEffect { if (measured >= 0) onOthersPx(measured) }
     val othersPx = if (measured >= 0) measured else savedOthersPx
     val expanded =
@@ -257,11 +271,15 @@ private fun CalendarBody(
                     rowHeight = rowHeight,
                 )
                 YearRowsHandle(rowsExpanded) { viewModel.expandYearRows(!rowsExpanded) }
+                // Under the handle in the same column, with its gap above it inside: a gap the
+                // column added itself would stay behind, or appear in the last frame.
+                FadingLegend(
+                    legendShown,
+                    onHeight = { legendPx = it },
+                    showBridge = shown.bridgeDays.isNotEmpty(),
+                    showGranted = shown.grantedEnabled,
+                )
             }
-            Legend(
-                showBridge = shown.bridgeDays.isNotEmpty(),
-                showGranted = shown.grantedEnabled,
-            )
             SchoolHolidaysUnknownNote(
                 shown,
                 LocalDate.of(shown.year, 1, 1),
@@ -274,6 +292,38 @@ private fun CalendarBody(
                 R.string.enter_vacation_days,
                 onOpenSettings,
             )
+        }
+    }
+}
+
+/**
+ * The year view's legend, gone while the rows are expanded. [shown] runs from 1 (there) to 0
+ * (gone) with the rows' animation: it fades and takes less room, so the rows below grow into
+ * the room it leaves. At 0 only an empty column is left (it measures 0 high in the same layout
+ * pass as the rest of the page) and nothing for TalkBack to read.
+ */
+@Composable
+private fun FadingLegend(
+    shown: Float,
+    onHeight: (Int) -> Unit,
+    showBridge: Boolean,
+    showGranted: Boolean,
+) {
+    Column(
+        Modifier
+            .onSizeChanged { onHeight(it.height) }
+            .clipToBounds()
+            .graphicsLayer { alpha = shown }
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, (placeable.height * shown).roundToInt()) {
+                    placeable.placeRelative(0, 0)
+                }
+            },
+    ) {
+        if (shown > 0f) {
+            Spacer(Modifier.height(FrameSpacing))
+            Legend(showBridge = showBridge, showGranted = showGranted)
         }
     }
 }
