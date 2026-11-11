@@ -61,6 +61,10 @@ After 0.9.x: the features of 0.10.0 (parked items 18 to 23) are built on the int
 `release/0.10.0`; order, threads, the Room and backup version steps and the release steps are in
 `docs/milestone-0.10.0.md`.
 
+After 0.10.x: 0.11.0 (the visible features: legend, Kalender tab, portrait on phones, pager swipe,
+backup reminder, range picker and drag to mark) is built on `release/0.11.0`, planned in
+`docs/milestone-0.11.0.md`. 1.0.0 follows as the stable release; its candidates are listed there.
+
 Language (the maintainer, 2026-10-25): the app language is a setting, not only the system language: System
 (default), Deutsch, English. If the system language is neither, German applies (the default
 resources). Plan: `androidx.appcompat` `AppCompatDelegate.setApplicationLocales()` (works back to
@@ -385,10 +389,29 @@ clickable mock-up are in the project folder `design/review-m3/` and `design/revi
   that month, then the month's holidays and school holidays; the legend is one small row.
 - Year grid: 28 dp rows; swipe down expands them to what fits the screen without scrolling, at
   least 36 dp and at most 64 dp (the maintainer, 2026-10-27; `expandedRowHeight`, measured from the
-  page's other parts, so it follows the font size and the legend), swipe up makes them compact (like the
+  page's other parts, so it follows the font size), swipe up makes them compact (like the
   stock calendar app of some phones). A handle under the grid does the same by tap and for TalkBack. The swipe is
   only watched, so the page still scrolls: on a short screen a swipe up scrolls first and makes the
   rows compact only when the page is already at its end. The state lives in `PlannerViewModel`.
+- The year view's legend is hidden while the rows are expanded (0.11.0, the maintainer's idea
+  2026-11-10): it fades and shrinks with the row animation (`FadingLegend`, driven by an
+  `animateFloatAsState` that follows `rowsExpanded`) and the rows grow into its room. The fit takes
+  the legend's current height off the measured "rest of the page", so the target of the row
+  animation stays the same while the legend leaves: no second jump. The month view keeps its legend,
+  and the "school holidays unknown" note stays. The gap above the legend sits inside it, so
+  no stray gap is left at the end.
+- A second tap on the open Kalender tab goes back to today (0.11.0, parked 27): the month view to
+  the current month, the year view to the current year, the mode stays (`PlannerViewModel.showToday`).
+  TalkBack hears "Zum aktuellen Monat" / "Zum aktuellen Jahr" as the tab's click label. The other
+  tabs do nothing on a second tap.
+- Portrait on phones (0.11.0, parked 25): `OrientationPolicy` sets `requestedOrientation` to portrait
+  when the smallest width is under 600 dp and leaves it free from 600 dp (tablets). It runs as a
+  lifecycle callback (`onActivityPreCreated`, before the activity's `onCreate`) for every
+  activity, so the main screen and the widget setup screen are covered and a phone held sideways does
+  not build a landscape screen first. The manifest cannot do this, because it has one value for all
+  devices. The check is made at the start of an activity. Unfolding a foldable changes the
+  smallest width, and the manifest has no `configChanges` for it, so Android recreates the activity
+  and the choice is made again (reasoned from the manifest, not tried on a device).
 - A step (swipe or arrow) slides the title and the body a short way with a fade, like the tabs, in
   month and year view (the maintainer, 2026-10-27; `AnimatedContent` keyed on `CalendarPageKey`, no
   slide when animations are off). Header and body are drawn from one `CalendarPage`, which keeps the
