@@ -10,7 +10,7 @@ Wähle dein Bundesland. Die Feiertage werden nach den Regeln des Landes berechne
 • Arbeitstage frei wählbar, Heiligabend und Silvester nach deiner Regel
 
 <b>Tage eintragen und Brückentage finden</b>
-• Einzelne Tage oder einen ganzen Zeitraum im Monatskalender markieren
+• Einzelne Tage oder einen ganzen Zeitraum im Monatskalender markieren, auch mit langem Drücken und Ziehen
 • Auf Wunsch zeigen, welche geplanten Tage dein Arbeitgeber schon genehmigt hat
 • Den nächsten Feiertag antippen: Der Kalender öffnet sich und zeigt ihn
 • Jahresübersicht mit Feiertagen, Schulferien und deinem Urlaub

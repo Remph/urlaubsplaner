@@ -10,7 +10,7 @@ Pick your state. Public holidays are calculated by the state's rules; school hol
 • Working days of your choice, Christmas Eve and New Year's Eve by your own rule
 
 <b>Marking days and finding bridge days</b>
-• Mark single days or a whole range in the month calendar
+• Mark single days or a whole range in the month calendar, also by long-pressing and dragging
 • Optionally show which planned days your employer has already granted
 • Tap the next holiday: the calendar opens and shows it
 • Year overview with holidays, school holidays and your vacation

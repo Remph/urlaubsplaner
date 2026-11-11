@@ -22,7 +22,7 @@ aller 16 Bundesländer. Deine Daten bleiben auf deinem Telefon.
 - **Urlaubskonto:** Jahresanspruch, Resturlaub aus dem Vorjahr mit einem Datum, an dem er
   verfällt, genommene und geplante Tage, auch halbe Tage. Du wählst deine Arbeitstage, und
   Heiligabend und Silvester zählen so, wie du es willst.
-- **Tage eintragen:** einzelne Tage oder einen ganzen Zeitraum im Monatskalender markieren. Die
+- **Tage eintragen:** einzelne Tage oder einen ganzen Zeitraum im Monatskalender markieren, auch mit langem Drücken und Ziehen. Die
   Jahresansicht zeigt Feiertage, Schulferien und deinen Urlaub auf einen Blick. Auf Wunsch
   kennzeichnest du, welche geplanten Tage dein Arbeitgeber schon genehmigt hat, und du kannst die
   Urlaubstage eines ganzen Jahres auf einmal löschen.
@@ -101,7 +101,7 @@ data stays on your phone. (The screenshots above are the German version.)
   (currently 2026 to 2029). No internet needed.
 - **Vacation balance:** yearly entitlement, days carried over with an expiry date, days taken and
   planned, half days. You choose your working days and how Christmas Eve and New Year's Eve count.
-- **Marking days:** single days or a whole range in the month calendar; the year view shows
+- **Marking days:** single days or a whole range in the month calendar, also by long-pressing and dragging; the year view shows
   holidays, school holidays and your vacation at a glance. Optionally mark which planned days
   your employer has granted, and clear all vacation days of a year at once.
 - **Bridge days:** suggestions for where one day off gets you the most days free.

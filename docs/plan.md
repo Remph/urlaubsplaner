@@ -599,6 +599,21 @@ Known snags:
 - Instrumented tests (`app/src/androidTest`) need an emulator; see "Instrumented tests (0.9.2)" below. The cloud can only compile them (`assembleDebugAndroidTest`).
 - The launcher icon exists since M5 (sun over day tiles, adaptive with a themed monochrome layer; mock-ups in the project folder `design/icon/`).
 
+### Drag to mark a range (0.11.0, S2)
+
+In the month view a long press on a day that costs vacation, then a drag across the following
+days, marks a range the same way as "Bis": letting go opens the day sheet with the range filled
+in (start as the title, "Bis" set, cost shown), nothing is marked before the sheet's button. The
+gesture, its maths and the cost bubble are in `planner/DragToMark.kt`, the month grid uses them
+(`DayCells.kt`); the days under the finger look as in the "Bis" dialog (`RangePicker.kt`: one set of
+tile colours for both). The range stops at the month's first and last day (no paging while
+dragging), a backwards drag makes the earlier day the start, and the run is cut to its first and
+last day that costs vacation before the sheet opens. A long press on a weekend or a holiday gives
+one "no" tick and opens nothing; the year view has no drag. Haptics: a tick for every new day, one
+"no" tick at the month's edge. A normal swipe still pages (the gesture waits for the system's
+long-press time before it takes the pointer). TalkBack users keep the day sheet and the "Bis"
+dialog: drag is never the only way. Details of the build: `docs/milestone-0.11.0.md`.
+
 ### Backup reminder (0.11.0, S1)
 
 Android's own backup is off, so a lost or replaced phone loses everything unless a backup file was
@@ -634,4 +649,4 @@ saved. A quiet reminder, no notification and no new permission:
 - [x] M6 Release prep (0.9.0 released on GitHub 2026-10-26; F-Droid postponed): about screen (PR #29); signing, version 0.9.0, F-Droid texts and icon, `docs/release.md` (release-files PR); still the maintainer's: the key, the F-Droid merge request, the phone test
 - [x] 0.10.0 (parked items 18 to 23) built on `release/0.10.0`: clear a year (PR #44), lilac school holidays (PR #45), granted days (PR #46), month slide and year rows that fit (PR #47), next holiday highlight (PR #49); release PR `feature/0-10-release`
 - [x] 0.10.1 performance and feel fixes (`feature/0-10-1-perf-feel`, PR #56, merged 2026-10-31)
-- [x] 0.11.0 (the visible features) built on `release/0.11.0`: backup reminder (PR #58), range picker for "Bis" (PR #59), legend in the year view, second tap on Kalender, portrait on phones (PR #60), debug application ID suffix (PR #61), calendar pager (PR #62), expanded year rows fill the screen (PR #63); release PR `feature/0-11-release`
+- [x] 0.11.0 (the visible features) built on `release/0.11.0`: backup reminder (PR #58), range picker for "Bis" (PR #59), legend in the year view, second tap on Kalender, portrait on phones (PR #60), debug application ID suffix (PR #61), calendar pager (PR #62), expanded year rows fill the screen (PR #63), drag to mark a range (PR #64); release PR `feature/0-11-release`
