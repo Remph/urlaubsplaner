@@ -270,10 +270,10 @@ and PR C (Brückentage).
   one year only looks at its own marks, and the Resturlaub of the next year is still typed in.
 - Tests: the settings screen tests now walk list and pages; `AppRootTest`, `AppearanceStoreTest`,
   `ThemeTest` (colour choice, pure black), `SummariesTest`. Screenshots of the real screens in
-  light, dark and pure black are in `/mnt/project-files/design/pr-a/` (not in the repo).
+  light, dark and pure black are in `/mnt/project-files/design/0.9.0/pr-a/` (not in the repo).
 
 Übersicht and Kalender (M3, third piece, "PR B"): designed with the maintainer in the mockup session,
-2026-10-25 (`/mnt/project-files/design/mockups-r1/`). Built on top of PR A.
+2026-10-25 (`/mnt/project-files/design/0.9.0/mockups-r1/`). Built on top of PR A.
 
 - `planner/PlannerViewModel` gives two `YearView`s: `overview` (always this year) and `calendar`
   (the year of the shown month). A `YearView` is everything one year shows, worked out once:
