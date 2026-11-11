@@ -31,7 +31,8 @@ aller 16 Bundesländer. Deine Daten bleiben auf deinem Telefon.
 - **Kalender-Export (ICS)** für jede Kalender-App.
 - **Zwei Widgets** für den Startbildschirm: nächster Urlaub und verbleibende Tage.
 - **Sicherung:** Du speicherst eine Sicherungsdatei, wohin du willst, und stellst sie später
-  wieder her, zum Beispiel auf einem neuen Telefon.
+  wieder her, zum Beispiel auf einem neuen Telefon. Ist die letzte Sicherung über drei Monate her,
+  erinnert dich die Übersicht mit einer leisen Zeile; die App zeigt auch, wann du zuletzt gesichert hast.
 - Deutsch und Englisch, hell, dunkel und reines Schwarz, wahlweise mit den Farben deines
   Hintergrundbilds.
 
@@ -106,7 +107,8 @@ data stays on your phone. (The screenshots above are the German version.)
 - **Bridge days:** suggestions for where one day off gets you the most days free.
 - **Next holiday:** a tap on the overview opens the calendar and shows the day.
 - **Calendar export (ICS)** for any calendar app, **two home screen widgets**, and **backup files**
-  you save wherever you like.
+  you save wherever you like. If the last backup is over three months old, the overview reminds
+  you with a quiet line; the app also shows when you last saved one.
 - Light, dark and pure black themes, optionally with your wallpaper's colours.
 
 ### Install

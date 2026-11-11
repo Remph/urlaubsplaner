@@ -21,7 +21,7 @@ Pick your state. Public holidays are calculated by the state's rules; school hol
 • Two home screen widgets: next vacation and days left
 
 <b>Your data stays with you</b>
-The app has no internet access, no account, no ads and no tracking. To back up or move to a new phone, save a backup file wherever you like and restore it later.
+The app has no internet access, no account, no ads and no tracking. To back up or move to a new phone, save a backup file wherever you like and restore it later. When the last backup is long ago, the overview reminds you with a quiet line.
 
 <b>More</b>
 • German and English, switchable in the app

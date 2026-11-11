@@ -1,0 +1,1 @@
+Neu: Der Kalender folgt beim Wischen deinem Finger und rastet ein. „Bis“ zeigt den Zeitraum in einem eigenen Monatsraster. Die Übersicht erinnert leise an eine Sicherung, wenn die letzte über drei Monate her ist. Ein zweiter Tipp auf „Kalender“ springt zu heute. In der Jahresansicht macht die Legende Platz, wenn die Zeilen wachsen. Auf Telefonen bleibt die App im Hochformat.
