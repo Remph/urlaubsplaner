@@ -18,6 +18,7 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.cancel
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
@@ -129,6 +130,18 @@ class CalendarScreenTest {
         compose.onNodeWithText("So").assertIsDisplayed()
         compose.onNodeWithText("Monat").assertIsDisplayed()
         compose.onNodeWithText("Jahr").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the month card sits as far in as the header and no further`() {
+        show()
+
+        // The frame has 16 dp at the side and the card 16 dp inside it. A second side padding on
+        // the page body once set the whole body 16 dp deeper than the header above it.
+        // The legend under the card has the word too; the card comes first.
+        val card = compose.onAllNodes(hasText("Genommen", substring = true))[0]
+        assertEquals(32f, card.getUnclippedBoundsInRoot().left.value, 0.5f)
     }
 
     @Test

@@ -221,7 +221,8 @@ private fun PagerFollowsViewModel(
     val removed = rememberAnimationsRemoved()
     val haptic = LocalHapticFeedback.current
     val index = pages.indexOf(month)
-    LaunchedEffect(index) {
+    // Keyed on the pager too: the other mode has a new pager, and its page index can be the same.
+    LaunchedEffect(pager, index) {
         // Not while a finger or a fling is already taking the pager there.
         if (pager.targetPage != index) {
             if (removed) pager.scrollToPage(index) else pager.animateScrollToPage(index)
@@ -337,10 +338,9 @@ private fun CalendarBody(
         label = "yearRowHeight",
     )
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = FramePadding).onSizeChanged {
-            bodyPx =
-                it.height
-        },
+        // The page already has the frame's side padding; a second one would set the body in
+        // further than the header above it.
+        Modifier.fillMaxWidth().onSizeChanged { bodyPx = it.height },
         verticalArrangement = Arrangement.spacedBy(FrameSpacing),
     ) {
         if (mode == CalendarMode.MONTH) {
