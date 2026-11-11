@@ -412,14 +412,21 @@ clickable mock-up are in the project folder `design/review-m3/` and `design/revi
   devices. The check is made at the start of an activity. Unfolding a foldable changes the
   smallest width, and the manifest has no `configChanges` for it, so Android recreates the activity
   and the choice is made again (reasoned from the manifest, not tried on a device).
-- A step (swipe or arrow) slides the title and the body a short way with a fade, like the tabs, in
-  month and year view (the maintainer, 2026-10-27; `AnimatedContent` keyed on `CalendarPageKey`, no
-  slide when animations are off). Header and body are drawn from one `CalendarPage`, which keeps the
-  old year's page until the new year's view has arrived (no empty-state flash).
-- Swipe sideways in the calendar (the maintainer, 2026-10-26): left shows the next month (month view) or
-  year (year view), right the previous one; 64 dp or more counts (`Modifier.swipeToStep`). It does
-  not switch between month and year view (the segmented button does that). The arrow buttons stay
-  for TalkBack. The step slides, see above.
+- Swipe sideways in the calendar (the maintainer, 2026-10-26): left shows the next month (month
+  view) or year (year view), right the previous one. It does not switch between month and year view
+  (the segmented button does that). The arrow buttons stay for TalkBack.
+- Pager (0.11.0, parked 28; before that, 0.10.0 slid the page after the finger was released with
+  `AnimatedContent`, `CalendarPage` and `Modifier.swipeToStep`, all gone now): month and year are
+  one `HorizontalPager` (made again when the mode changes, `CalendarPager.kt`), so a sideways drag
+  moves the page with the finger and snaps. The next page is drawn only while a finger drags (no
+  peeking). The ViewModel stays the truth for month and mode: `PagerFollowsViewModel` scrolls the
+  pager when the arrows or "today" change the month and sets the month when a swipe has settled
+  (with the tick; the arrows have none). Every page reads the view of its own year
+  (`PlannerViewModel.calendarView(year)`), and the ViewModel reads the years next to the page in
+  view ahead, so a page dragged in from December to January is not blank. The header stays and the
+  title moves with the pager; each page scrolls on its own. A swipe past the first or last month
+  stretches the page and gives the "no" tick. With animations off in the system settings the snap
+  is a jump. The expanded year rows use the room the frame and the rounding leave (PR #63).
 - Weekend numbers: the theme's soft grey is kept where it has 4.5:1 on the normal and the school
   holiday tile, else a fixed stronger grey (dark 5.3:1, light 6.4:1 on school tiles).
   `weekendTextColor` and `contrastRatio` are unit-tested.
@@ -592,6 +599,21 @@ Known snags:
 - Instrumented tests (`app/src/androidTest`) need an emulator; see "Instrumented tests (0.9.2)" below. The cloud can only compile them (`assembleDebugAndroidTest`).
 - The launcher icon exists since M5 (sun over day tiles, adaptive with a themed monochrome layer; mock-ups in the project folder `design/icon/`).
 
+### Drag to mark a range (0.11.0, S2)
+
+In the month view a long press on a day that costs vacation, then a drag across the following
+days, marks a range the same way as "Bis": letting go opens the day sheet with the range filled
+in (start as the title, "Bis" set, cost shown), nothing is marked before the sheet's button. The
+gesture, its maths and the cost bubble are in `planner/DragToMark.kt`, the month grid uses them
+(`DayCells.kt`); the days under the finger look as in the "Bis" dialog (`RangePicker.kt`: one set of
+tile colours for both). The range stops at the month's first and last day (no paging while
+dragging), a backwards drag makes the earlier day the start, and the run is cut to its first and
+last day that costs vacation before the sheet opens. A long press on a weekend or a holiday gives
+one "no" tick and opens nothing; the year view has no drag. Haptics: a tick for every new day, one
+"no" tick at the month's edge. A normal swipe still pages (the gesture waits for the system's
+long-press time before it takes the pointer). TalkBack users keep the day sheet and the "Bis"
+dialog: drag is never the only way. Details of the build: `docs/milestone-0.11.0.md`.
+
 ### Backup reminder (0.11.0, S1)
 
 Android's own backup is off, so a lost or replaced phone loses everything unless a backup file was
@@ -626,4 +648,5 @@ saved. A quiet reminder, no notification and no new permission:
 - [x] M5 Polish (animations, final UI review, tech debt review)
 - [x] M6 Release prep (0.9.0 released on GitHub 2026-10-26; F-Droid postponed): about screen (PR #29); signing, version 0.9.0, F-Droid texts and icon, `docs/release.md` (release-files PR); still the maintainer's: the key, the F-Droid merge request, the phone test
 - [x] 0.10.0 (parked items 18 to 23) built on `release/0.10.0`: clear a year (PR #44), lilac school holidays (PR #45), granted days (PR #46), month slide and year rows that fit (PR #47), next holiday highlight (PR #49); release PR `feature/0-10-release`
-- [ ] 0.10.1 performance and feel fixes (`feature/0-10-1-perf-feel`, PR into `main`)
+- [x] 0.10.1 performance and feel fixes (`feature/0-10-1-perf-feel`, PR #56, merged 2026-10-31)
+- [x] 0.11.0 (the visible features) built on `release/0.11.0`: backup reminder (PR #58), range picker for "Bis" (PR #59), legend in the year view, second tap on Kalender, portrait on phones (PR #60), debug application ID suffix (PR #61), calendar pager (PR #62), expanded year rows fill the screen (PR #63), drag to mark a range (PR #64); release PR `feature/0-11-release`

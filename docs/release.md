@@ -119,7 +119,7 @@ Quick Start Guide). `f-droid.org` itself is not reachable from the cloud, `gitla
 
 **What is ready in this repo** (`fastlane/metadata/android/`): `de-DE` and `en-US` with `title.txt`,
 `short_description.txt` (under 80 characters, no trailing dot), `full_description.txt`,
-`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
+`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
 F-Droid requires `en-US`; `de-DE` is extra. Descriptions use only the HTML tags F-Droid allows.
 
 **What F-Droid checks**: free licence (GPL-3.0), only free dependencies and tools (no Google Play

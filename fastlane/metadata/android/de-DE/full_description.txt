@@ -10,7 +10,7 @@ Wähle dein Bundesland. Die Feiertage werden nach den Regeln des Landes berechne
 • Arbeitstage frei wählbar, Heiligabend und Silvester nach deiner Regel
 
 <b>Tage eintragen und Brückentage finden</b>
-• Einzelne Tage oder einen ganzen Zeitraum im Monatskalender markieren
+• Einzelne Tage oder einen ganzen Zeitraum im Monatskalender markieren, auch mit langem Drücken und Ziehen
 • Auf Wunsch zeigen, welche geplanten Tage dein Arbeitgeber schon genehmigt hat
 • Den nächsten Feiertag antippen: Der Kalender öffnet sich und zeigt ihn
 • Jahresübersicht mit Feiertagen, Schulferien und deinem Urlaub
@@ -21,7 +21,7 @@ Wähle dein Bundesland. Die Feiertage werden nach den Regeln des Landes berechne
 • Zwei Widgets für den Startbildschirm: nächster Urlaub und verbleibende Tage
 
 <b>Deine Daten bleiben bei dir</b>
-Die App hat keinen Internetzugriff, kein Konto, keine Werbung und keine Auswertung. Zum Sichern und für den Umzug auf ein neues Telefon speicherst du eine Sicherungsdatei, wohin du willst, und stellst sie später wieder her.
+Die App hat keinen Internetzugriff, kein Konto, keine Werbung und keine Auswertung. Zum Sichern und für den Umzug auf ein neues Telefon speicherst du eine Sicherungsdatei, wohin du willst, und stellst sie später wieder her. Wenn die letzte Sicherung lange her ist, erinnert dich die Übersicht mit einer leisen Zeile daran.
 
 <b>Mehr</b>
 • Deutsch und Englisch, umschaltbar in der App
