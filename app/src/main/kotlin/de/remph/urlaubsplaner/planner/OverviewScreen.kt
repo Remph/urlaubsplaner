@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.remph.urlaubsplaner.R
+import de.remph.urlaubsplaner.core.backup.BackupHint
 import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.ui.rememberAnimationsRemoved
 import java.time.LocalDate
@@ -71,6 +72,7 @@ fun OverviewScreen(
     viewModel: PlannerViewModel,
     outerPadding: PaddingValues,
     onOpenSettings: () -> Unit,
+    onOpenBackup: () -> Unit,
     onOpenMonth: (YearMonth) -> Unit,
     onShowDate: (LocalDate) -> Unit,
 ) {
@@ -92,10 +94,11 @@ fun OverviewScreen(
                     R.string.enter_vacation_days,
                     onOpenSettings,
                 )
+                BackupHintLine(viewModel, onOpenBackup)
             }
 
             else -> {
-                Status(shown, viewModel, onOpenMonth, onShowDate)
+                Status(shown, viewModel, onOpenBackup, onOpenMonth, onShowDate)
             }
         }
     }
@@ -139,6 +142,7 @@ fun EmptyState(
 private fun Status(
     view: YearView,
     viewModel: PlannerViewModel,
+    onOpenBackup: () -> Unit,
     onOpenMonth: (YearMonth) -> Unit,
     onShowDate: (LocalDate) -> Unit,
 ) {
@@ -226,6 +230,9 @@ private fun Status(
             LocalDate.of(view.year, 12, 31),
         )
     }
+
+    // The very bottom, the quietest place (the maintainer's choice, 2026-11-10).
+    BackupHintLine(viewModel, onOpenBackup, Modifier.riseIn(intro, 6))
 
     // Found once when the sheet opens: once its days are marked the bridge leaves the list, and the
     // sheet must stay until it has slid away.
@@ -403,6 +410,59 @@ internal fun Card(
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             content()
+        }
+    }
+}
+
+/**
+ * One quiet line, only when a backup is overdue (see BackupReminder): no colour, no icon, the whole
+ * line opens the backup page. Nothing is drawn, and no space is kept, when there is no hint.
+ */
+@Composable
+private fun BackupHintLine(
+    viewModel: PlannerViewModel,
+    onOpenBackup: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val hint by viewModel.backupHint.collectAsStateWithLifecycle()
+    val shown = hint ?: return
+    val text =
+        when (shown) {
+            is BackupHint.Old -> {
+                pluralStringResource(R.plurals.backup_hint_old, shown.months, shown.months)
+            }
+
+            BackupHint.Never -> {
+                stringResource(R.string.backup_hint_never)
+            }
+        }
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier
+                .clickable(
+                    onClickLabel = stringResource(R.string.backup_hint_open),
+                    role = Role.Button,
+                    onClick = onOpenBackup,
+                ).heightIn(min = 48.dp)
+                .padding(start = 16.dp, end = 12.dp)
+                .semantics(mergeDescendants = true) {},
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

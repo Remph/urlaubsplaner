@@ -18,6 +18,7 @@ import de.remph.urlaubsplaner.core.holidays.RegionalOptOut
 import de.remph.urlaubsplaner.core.ics.IcsLanguage
 import de.remph.urlaubsplaner.core.settings.UserSettings
 import de.remph.urlaubsplaner.data.BackupFileStore
+import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.UserDataRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -53,6 +54,7 @@ class SettingsViewModel(
     private val store: BackupFileStore,
     private val calendar: CalendarExporter,
     private val clock: Clock,
+    private val backupStatus: BackupStatusStore,
 ) : ViewModel() {
     /** The year the page starts on, and the one the settings list shows. */
     val currentYear = LocalDate.now(clock).year
@@ -100,7 +102,8 @@ class SettingsViewModel(
             .combine(notice) { (base, edits), notice -> Triple(base, edits, notice) }
             .combine(pendingImport) { (base, edits, notice), plan ->
                 buildState(base, edits ?: Edits(base.year), notice, plan)
-            }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+            }.combine(backupStatus.state) { ui, status -> ui.copy(lastBackup = status.lastBackup) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** What the year before suggests for a year with nothing stored. */
     private fun suggestion(
@@ -364,7 +367,10 @@ class SettingsViewModel(
         viewModelScope.launch {
             notice.value =
                 try {
-                    store.write(uri, repository.readAll(), LocalDate.now(clock))
+                    val today = LocalDate.now(clock)
+                    store.write(uri, repository.readAll(), today)
+                    // Only a file that was written counts; a restore never gets here.
+                    backupStatus.recordBackup(today)
                     Notice.Exported
                 } catch (_: IOException) {
                     Notice.ExportFailed

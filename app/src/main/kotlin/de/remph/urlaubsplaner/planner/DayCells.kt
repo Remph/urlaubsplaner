@@ -87,7 +87,7 @@ fun YearView.look(date: LocalDate): DayLook {
 
 /** The seven weekday names over the month grid, Monday first as in Germany. */
 @Composable
-private fun WeekdayHeader(locale: Locale) {
+internal fun WeekdayHeader(locale: Locale) {
     Row(Modifier.fillMaxWidth()) {
         for (day in DayOfWeek.entries) {
             Text(

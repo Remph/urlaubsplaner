@@ -48,6 +48,7 @@ class OverviewScreenTest {
     fun close() = fixture.close()
 
     private val shown = mutableListOf<LocalDate>()
+    private var backupOpened = 0
 
     private fun show(waitFor: String) {
         compose.setContent {
@@ -55,6 +56,7 @@ class OverviewScreenTest {
                 fixture.viewModel(),
                 PaddingValues(),
                 onOpenSettings = {},
+                onOpenBackup = { backupOpened++ },
                 onOpenMonth = {},
                 onShowDate = { shown += it },
             )
@@ -91,6 +93,61 @@ class OverviewScreenTest {
         compose.onNode(hasText("2") and hasText("Genommen")).assertIsDisplayed()
         compose.onNode(hasText("5") and hasText("Geplant")).assertIsDisplayed()
         compose.onNode(hasText("40") and hasText("Anspruch")).assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `an old backup shows one quiet line that opens the backup page`() {
+        fixture.fill()
+        // 2027-03-10 is today: five whole months.
+        fixture.backupStatus.recordBackup(LocalDate.of(2026, 10, 1))
+        show("Letzte Sicherung vor 5 Monaten")
+
+        compose
+            .onNodeWithText(
+                "Letzte Sicherung vor 5 Monaten",
+            ).performScrollTo()
+            .assertIsDisplayed()
+        compose
+            .onNode(
+                hasText("Letzte Sicherung vor 5 Monaten") and hasClickAction(),
+            ).assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("Letzte Sicherung vor 5 Monaten").performClick()
+
+        assertEquals(1, backupOpened)
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `a day-marking user who never saved a backup is reminded after 14 days, in English`() {
+        fixture.fill()
+        // The app first saw marked days on 24 February: 14 days before today.
+        fixture.backupStatus.noteMarkedDays(LocalDate.of(2027, 2, 24))
+        show("No backup saved yet")
+
+        compose.onNodeWithText("No backup saved yet").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a recent backup or a young start shows no line`() {
+        fixture.fill()
+        fixture.backupStatus.recordBackup(LocalDate.of(2027, 2, 1))
+        show("Tage übrig 2027")
+
+        compose.onAllNodesWithText("Sicherung", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the first marked days start the wait, they do not show the line at once`() {
+        fixture.fill()
+        show("Tage übrig 2027")
+        // The view model noted today as the start; nothing is due before 14 days have passed.
+        compose.waitUntil(5_000) { fixture.backupStatus.state.value.marksSince != null }
+
+        assertEquals(LocalDate.of(2027, 3, 10), fixture.backupStatus.state.value.marksSince)
+        compose.onAllNodesWithText("Sicherung", substring = true).assertCountEquals(0)
     }
 
     @Test
@@ -261,6 +318,7 @@ class OverviewScreenTest {
                     fixture.viewModel(),
                     PaddingValues(),
                     onOpenSettings = {},
+                    onOpenBackup = {},
                     onOpenMonth = {},
                     onShowDate = {},
                 )

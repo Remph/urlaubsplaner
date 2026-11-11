@@ -46,6 +46,9 @@ class UserDataRepository(
             it.toMarkedDays()
         }
 
+    /** Whether any day, in any year, is marked. */
+    fun observeAnyMarkedDay(): Flow<Boolean> = markedDayDao.observeAny()
+
     /** The same without the granted flags, for the balance and anything that does not show them. */
     fun observeMarks(
         from: LocalDate,

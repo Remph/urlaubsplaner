@@ -26,6 +26,7 @@ import de.remph.urlaubsplaner.core.balance.YearEntitlement
 import de.remph.urlaubsplaner.core.holidays.Bundesland
 import de.remph.urlaubsplaner.core.settings.UserSettings
 import de.remph.urlaubsplaner.data.BackupFileStore
+import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.CalendarFileStore
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
 import de.remph.urlaubsplaner.data.UserDataRepository
@@ -62,6 +63,7 @@ class SettingsScreenTest {
     private lateinit var repository: UserDataRepository
     private lateinit var viewModel: SettingsViewModel
     private lateinit var appearance: AppearanceStore
+    private lateinit var backupStatus: BackupStatusStore
 
     @Before
     fun open() {
@@ -70,12 +72,14 @@ class SettingsScreenTest {
         database = Room.inMemoryDatabaseBuilder(context, UrlaubsplanerDatabase::class.java).build()
         repository = UserDataRepository(database)
         val clock = Clock.fixed(Instant.parse("2027-01-15T10:00:00Z"), ZoneOffset.UTC)
+        backupStatus = BackupStatusStore(context.getSharedPreferences("backup-status-test", 0))
         viewModel =
             SettingsViewModel(
                 repository,
                 BackupFileStore(context.contentResolver),
                 CalendarExporter(repository, CalendarFileStore(context), clock),
                 clock,
+                backupStatus,
             )
         val preferences = context.getSharedPreferences("appearance-test", Context.MODE_PRIVATE)
         preferences.edit().clear().commit()
@@ -302,6 +306,42 @@ class SettingsScreenTest {
 
         compose.onNodeWithText("Sicherung wiederherstellen").assertIsDisplayed()
         compose.onNodeWithText("Sicherung speichern").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the backup page says when the last backup was saved, or that there is none`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Datensicherung")
+
+        compose.onNodeWithText("Noch keine Sicherung").assertIsDisplayed()
+
+        backupStatus.recordBackup(LocalDate.of(2026, 11, 3))
+
+        waitForText("Zuletzt gesichert: 03.11.2026")
+        compose.onNodeWithText("Noch keine Sicherung").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `the English backup page says the same`() {
+        backupStatus.recordBackup(LocalDate.of(2026, 11, 3))
+        show("Settings")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "North Rhine-Westphalia")
+        openRow("Backup")
+
+        waitForText("Last saved: Nov 3, 2026")
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a fresh install shows no backup line, restoring is its first step`() {
+        show("Einstellungen")
+        openRow("Datensicherung")
+
+        compose.onNodeWithText("Sicherung wiederherstellen").assertIsDisplayed()
+        compose.onNodeWithText("Noch keine Sicherung").assertDoesNotExist()
     }
 
     @Test

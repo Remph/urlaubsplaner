@@ -2,12 +2,15 @@ package de.remph.urlaubsplaner.planner
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import de.remph.urlaubsplaner.core.backup.BackupHint
+import de.remph.urlaubsplaner.core.backup.BackupReminder
 import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.MarkedDays
 import de.remph.urlaubsplaner.core.balance.VacationCalculator
 import de.remph.urlaubsplaner.core.bridge.BridgeFinder
 import de.remph.urlaubsplaner.core.holidays.PublicHolidays
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHolidayData
+import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.UserDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,6 +47,7 @@ class PlannerViewModel(
     private val repository: UserDataRepository,
     private val schoolHolidays: Lazy<SchoolHolidayData>,
     private val clock: Clock,
+    private val backupStatus: BackupStatusStore,
 ) : ViewModel() {
     // The app can stay in memory for days, so "today" is read again when it comes back to the
     // front (refreshToday), not only once when this ViewModel is made.
@@ -90,6 +94,22 @@ class PlannerViewModel(
 
     /** The first and the last month the calendar can show (see [showMonth]). */
     val calendarMonths: ClosedRange<YearMonth> get() = firstMonth..lastMonth
+
+    /**
+     * The quiet line about backups on the overview, null when there is nothing to remind of.
+     * The first time marked days are seen it also starts the wait for the first hint (see
+     * [BackupReminder]); the store keeps that day, so it happens once.
+     */
+    val backupHint: StateFlow<BackupHint?> =
+        combine(
+            backupStatus.state,
+            repository.observeAnyMarkedDay(),
+            today,
+        ) { status, hasMarkedDays, now ->
+            if (hasMarkedDays) backupStatus.noteMarkedDays(now)
+            BackupReminder.hint(status, now, hasMarkedDays)
+        }.distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** The month the calendar shows, also while it shows the whole year. */
     val calendarMonth: StateFlow<YearMonth> = shownMonth

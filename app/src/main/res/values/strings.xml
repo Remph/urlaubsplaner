@@ -89,6 +89,15 @@
         <item quantity="one">%d Jahr mit Urlaubsanspruch</item>
         <item quantity="other">%d Jahre mit Urlaubsanspruch</item>
     </plurals>
+    <string name="backup_last">Zuletzt gesichert: %1$s</string>
+    <string name="backup_never">Noch keine Sicherung</string>
+    <!-- Die ruhige Zeile auf der Übersicht -->
+    <plurals name="backup_hint_old">
+        <item quantity="one">Letzte Sicherung vor %d Monat</item>
+        <item quantity="other">Letzte Sicherung vor %d Monaten</item>
+    </plurals>
+    <string name="backup_hint_never">Noch keine Sicherung gespeichert</string>
+    <string name="backup_hint_open">Datensicherung öffnen</string>
     <string name="notice_saved">Gespeichert.</string>
     <string name="notice_exported">Sicherung gespeichert.</string>
     <string name="notice_imported">Sicherung wiederhergestellt.</string>
@@ -230,6 +239,12 @@
     <string name="mark_full">Ganzer Tag</string>
     <string name="mark_half">Halber Tag</string>
     <string name="until">Bis: %1$s</string>
+    <string name="range_title">Bis wann?</string>
+    <string name="range_from">Von %1$s</string>
+    <string name="range_first_day">Erster Tag</string>
+    <string name="range_last_day">Letzter Tag</string>
+    <string name="range_inside">Im Zeitraum</string>
+    <string name="range_free_note">Arbeitsfreie Tage und Feiertage zählen nicht mit.</string>
     <string name="mark_save">Eintragen</string>
     <string name="mark_change">Ändern</string>
     <string name="mark_remove">Entfernen</string>
