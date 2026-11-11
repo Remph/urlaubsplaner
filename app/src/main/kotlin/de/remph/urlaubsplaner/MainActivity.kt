@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
                                 app.backupStore,
                                 app.calendarExporter,
                                 app.clock,
+                                app.backupStatusStore,
                             )
                         },
                     plannerViewModel =
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity() {
                                 app.repository,
                                 app.schoolHolidays,
                                 app.clock,
+                                app.backupStatusStore,
                             )
                         },
                     appearanceStore = app.appearanceStore,

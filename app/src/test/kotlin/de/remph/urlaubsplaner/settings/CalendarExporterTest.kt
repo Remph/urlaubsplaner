@@ -128,7 +128,8 @@ class CalendarExporterTest {
         val uri = runBlocking { exporter.openUri(IcsLanguage.GERMAN) }
 
         assertNotNull(uri)
-        assertEquals("de.remph.urlaubsplaner.fileprovider", uri!!.authority)
+        // The debug build has the application ID suffix ".debug", the release build has none.
+        assertEquals(context.packageName + ".fileprovider", uri!!.authority)
         assertEquals("urlaubsplaner-2027-03-10.ics", uri.lastPathSegment)
         val text =
             context.contentResolver

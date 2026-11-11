@@ -105,7 +105,13 @@ class BackupOnDeviceTest {
         // A ViewModel belongs to the main thread; the tests then wait for it from this one.
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             viewModel =
-                SettingsViewModel(repository, app.backupStore, app.calendarExporter, app.clock)
+                SettingsViewModel(
+                    repository,
+                    app.backupStore,
+                    app.calendarExporter,
+                    app.clock,
+                    app.backupStatusStore,
+                )
         }
         return viewModel!!.also { viewModels += it }
     }

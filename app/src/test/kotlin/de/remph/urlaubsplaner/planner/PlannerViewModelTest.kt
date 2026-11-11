@@ -2,12 +2,15 @@ package de.remph.urlaubsplaner.planner
 
 import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.remph.urlaubsplaner.core.backup.BackupHint
 import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.VacationDays
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -20,7 +23,7 @@ import org.junit.runner.RunWith
 import java.time.LocalDate
 import java.time.YearMonth
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class PlannerViewModelTest {
     private var fixture = PlannerFixture()
@@ -38,6 +41,14 @@ class PlannerViewModelTest {
         viewModels.put("planner", model)
         return model
     }
+
+    private fun viewModelWith(clock: java.time.Clock) =
+        PlannerViewModel(
+            fixture.repository,
+            lazyOf(fixture.schoolHolidays),
+            clock,
+            fixture.backupStatus,
+        )
 
     /** Room reports from its own threads, so a value arrives a moment after the change. */
     private fun <T : Any> await(
@@ -69,10 +80,10 @@ class PlannerViewModelTest {
         val view =
             runBlocking {
                 withTimeout(5_000) {
-                    var read = model.calendar.value
+                    var read = model.calendarView(2027).value
                     while (read == null) {
                         delay(10)
-                        read = model.calendar.value
+                        read = model.calendarView(2027).value
                     }
                     read
                 }
@@ -157,17 +168,59 @@ class PlannerViewModelTest {
     }
 
     @Test
-    fun `the calendar loads the year of the month it shows`() {
+    fun `a calendar page reads the view of its own year whatever month is shown`() {
         fixture.fill()
         val model = viewModel()
-        await(model.calendar) { it.year == 2027 && it.balance != null }
+        await(model.calendarView(2027)) { it.balance != null }
 
-        model.showMonth(YearMonth.of(2028, 1))
-        val next = await(model.calendar) { it.year == 2028 }
+        val next = await(model.calendarView(2028))
+        val same = await(model.calendarView(2027)) { it.balance != null }
 
         assertEquals(2028, next.year)
         assertNull(next.balance)
+        assertEquals(2027, same.year)
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
     }
+
+    @Test
+    fun `the year next to the shown month is read ahead before a finger drags its page in`() {
+        fixture.fill()
+        val model = viewModel()
+        await(model.overview) { it.balance != null }
+        model.showMonth(YearMonth.of(2027, 12))
+
+        // Nothing here collects 2028: only the ViewModel's own read-ahead can have it ready.
+        assertTrue(valueSoon(model, 2028) != null)
+        // March is two years from nothing: neither year is far, but 2026 is not next to it.
+        assertNull(model.calendarView(2026).value)
+    }
+
+    @Test
+    fun `in the year view the years on both sides are read ahead`() {
+        fixture.fill()
+        val model = viewModel()
+        await(model.overview) { it.balance != null }
+
+        model.showMode(CalendarMode.YEAR)
+
+        assertTrue(valueSoon(model, 2026) != null)
+        assertTrue(valueSoon(model, 2028) != null)
+    }
+
+    private fun valueSoon(
+        model: PlannerViewModel,
+        year: Int,
+    ): YearView? =
+        runBlocking {
+            withTimeout(10_000) {
+                var read = model.calendarView(year).value
+                while (read == null) {
+                    delay(10)
+                    read = model.calendarView(year).value
+                }
+                read
+            }
+        }
 
     @Test
     fun `the calendar never goes before 2019 or past next year`() {
@@ -187,14 +240,114 @@ class PlannerViewModelTest {
         assertFalse(model.canStep(1))
         // The first year loads without asking the rules for 2018.
         model.showMonth(YearMonth.of(2019, 1))
-        assertEquals(2019, await(model.calendar) { it.year == 2019 }.year)
+        assertEquals(2019, await(model.calendarView(2019)).year)
+    }
+
+    @Test
+    fun `no backup hint while nothing is marked, however long the app has run`() {
+        val clock = SteppingClock(fixture.clock)
+        val model = viewModelWith(clock)
+        viewModels.put("planner", model)
+        val seen = mutableListOf<Any?>()
+        runBlocking {
+            val job =
+                kotlinx.coroutines.GlobalScope.launch {
+                    model.backupHint.collect { seen += it }
+                }
+            clock.today = "2028-03-10"
+            model.refreshToday()
+            delay(200)
+            job.cancel()
+        }
+
+        assertTrue(seen.all { it == null })
+        assertNull(fixture.backupStatus.state.value.marksSince)
+    }
+
+    @Test
+    fun `never saved days get the hint 14 days after the first look, and a backup ends it`() {
+        fixture.fill()
+        val clock = SteppingClock(fixture.clock)
+        val model = viewModelWith(clock)
+        viewModels.put("planner", model)
+        val seen = mutableListOf<BackupHint?>()
+        val job = kotlinx.coroutines.GlobalScope.launch { model.backupHint.collect { seen += it } }
+        try {
+            // The first look at the marked days only starts the wait.
+            runBlocking {
+                withTimeout(5_000) {
+                    while (fixture.backupStatus.state.value.marksSince ==
+                        null
+                    ) {
+                        delay(10)
+                    }
+                }
+            }
+            assertEquals(fixture.date("2027-03-10"), fixture.backupStatus.state.value.marksSince)
+            assertNull(model.backupHint.value)
+
+            clock.today = "2027-03-23"
+            model.refreshToday()
+            runBlocking { delay(200) }
+            assertNull(model.backupHint.value)
+
+            clock.today = "2027-03-24"
+            model.refreshToday()
+            assertEquals(BackupHint.Never, await(model.backupHint) { it == BackupHint.Never })
+
+            fixture.backupStatus.recordBackup(fixture.date("2027-03-24"))
+            runBlocking { withTimeout(5_000) { while (model.backupHint.value != null) delay(10) } }
+        } finally {
+            job.cancel()
+        }
+    }
+
+    @Test
+    fun `an old backup gives the months, with or without marked days`() {
+        fixture.backupStatus.recordBackup(fixture.date("2026-10-01"))
+        val model = viewModel()
+        val job = kotlinx.coroutines.GlobalScope.launch { model.backupHint.collect {} }
+        try {
+            assertEquals(BackupHint.Old(5), await(model.backupHint))
+        } finally {
+            job.cancel()
+        }
+    }
+
+    @Test
+    fun `showToday goes back to the current month and keeps the mode`() {
+        val clock = SteppingClock(fixture.clock)
+        val model = viewModelWith(clock)
+        viewModels.put("planner", model)
+
+        model.showMonth(YearMonth.of(2027, 9))
+        model.showToday()
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+        assertEquals(CalendarMode.MONTH, model.calendarMode.value)
+
+        // The year view holds the year of the month, so today's month is this year there.
+        model.showMode(CalendarMode.YEAR)
+        model.showMonth(YearMonth.of(2028, 6))
+        model.showToday()
+        assertEquals(2027, model.calendarMonth.value.year)
+        assertEquals(CalendarMode.YEAR, model.calendarMode.value)
+
+        // Already there: nothing changes.
+        model.showToday()
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+
+        // After the date moved on while the app stayed in memory, today is the new date.
+        clock.today = "2028-01-02"
+        model.refreshToday()
+        model.showToday()
+        assertEquals(YearMonth.of(2028, 1), model.calendarMonth.value)
     }
 
     @Test
     fun `the overview follows the date after refreshToday`() {
         fixture.fill()
         val clock = SteppingClock(fixture.clock)
-        val model = PlannerViewModel(fixture.repository, lazyOf(fixture.schoolHolidays), clock)
+        val model = viewModelWith(clock)
         viewModels.put("planner", model)
         assertEquals(fixture.date("2027-03-10"), await(model.overview) { it.balance != null }.today)
 

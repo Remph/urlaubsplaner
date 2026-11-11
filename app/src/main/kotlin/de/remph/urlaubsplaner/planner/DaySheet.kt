@@ -12,19 +12,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,13 +41,12 @@ import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.settings.SwitchRow
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.Locale
 
 /**
- * What a tapped day is, and how to mark it: whole or half, one day or up to an end day ("Bis").
+ * What a tapped day is, and how to mark it: whole or half, one day or up to an end day ("Bis",
+ * chosen in the [RangePickerDialog]).
  * A range marks only the days that cost vacation, so the weekend inside it stays unmarked.
  * Before anything is stored the sheet says what it would cost and how many days would be left.
  */
@@ -62,6 +57,8 @@ fun DaySheet(
     date: LocalDate,
     viewModel: PlannerViewModel,
     onDismiss: () -> Unit,
+    /** The "Bis" day the sheet opens with: the end of a run dragged across the month view. */
+    initialEnd: LocalDate = date,
 ) {
     // While it slides away the sheet keeps showing the day as it was tapped, not the days just
     // stored (the Entfernen button would vanish and the sheet shrink half way down).
@@ -74,7 +71,7 @@ fun DaySheet(
     // The switch is for days still to come; today and the past are taken, whatever it says.
     val showGranted = shown.grantedEnabled && date.isAfter(shown.today)
     var granted by remember(date) { mutableStateOf(shown.isGranted(date)) }
-    var end by remember(date) { mutableStateOf(date) }
+    var end by remember(date) { mutableStateOf(initialEnd) }
     var picking by remember { mutableStateOf(false) }
     val days = shown.costlyDays(date, end)
     val cost = days.fold(VacationDays.ZERO) { sum, day -> sum + shown.cost(day, mark) }
@@ -183,13 +180,17 @@ fun DaySheet(
     }
 
     if (picking) {
-        EndDatePicker(date, end, onPick = {
-            end = it
-            picking = false
-        }, onDismiss = {
-            picking =
-                false
-        })
+        RangePickerDialog(
+            view = shown,
+            start = date,
+            current = end,
+            mark = mark,
+            onPick = {
+                end = it
+                picking = false
+            },
+            onDismiss = { picking = false },
+        )
     }
 }
 
@@ -244,61 +245,5 @@ private fun Fact(
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(start = 12.dp),
         )
-    }
-}
-
-/** The end day can be the start day or later in the same year; the balance is per year. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun EndDatePicker(
-    start: LocalDate,
-    current: LocalDate,
-    onPick: (LocalDate) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val state =
-        rememberDatePickerState(
-            initialSelectedDateMillis =
-                current
-                    .atStartOfDay(
-                        ZoneOffset.UTC,
-                    ).toInstant()
-                    .toEpochMilli(),
-            selectableDates =
-                object : SelectableDates {
-                    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                        val day =
-                            Instant
-                                .ofEpochMilli(
-                                    utcTimeMillis,
-                                ).atZone(ZoneOffset.UTC)
-                                .toLocalDate()
-                        return !day.isBefore(start) && day.year == start.year
-                    }
-
-                    override fun isSelectableYear(year: Int) = year == start.year
-                },
-        )
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val millis = state.selectedDateMillis
-                    if (millis != null) {
-                        onPick(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    } else {
-                        onDismiss()
-                    }
-                },
-            ) { Text(stringResource(R.string.ok)) }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-            ) { Text(stringResource(R.string.cancel)) }
-        },
-    ) {
-        DatePicker(state)
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.remph.urlaubsplaner.appearance.AppearanceStore
@@ -25,6 +27,7 @@ import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.MarkedDays
 import de.remph.urlaubsplaner.data.BackupFileStore
 import de.remph.urlaubsplaner.data.CalendarFileStore
+import de.remph.urlaubsplaner.planner.CalendarMode
 import de.remph.urlaubsplaner.planner.PlannerFixture
 import de.remph.urlaubsplaner.planner.PlannerViewModel
 import de.remph.urlaubsplaner.settings.CalendarExporter
@@ -67,6 +70,7 @@ class AppRootTest {
                 BackupFileStore(context.contentResolver),
                 CalendarExporter(fixture.repository, CalendarFileStore(context), fixture.clock),
                 fixture.clock,
+                fixture.backupStatus,
             )
         val appearance = AppearanceStore(context.getSharedPreferences("app-root-test", 0))
         planner = fixture.viewModel()
@@ -109,11 +113,139 @@ class AppRootTest {
 
     @Test
     @Config(qualifiers = "de")
+    fun `the backup line opens the backup page, and the next visit starts on the list`() {
+        fixture.fill()
+        fixture.backupStatus.recordBackup(java.time.LocalDate.of(2026, 10, 1))
+        waitForText("Letzte Sicherung vor 5 Monaten")
+
+        compose.onNodeWithText("Letzte Sicherung vor 5 Monaten").performScrollTo().performClick()
+
+        compose.waitForIdle()
+        compose.onNode(tab("Einstellungen")).assertIsSelected()
+        waitForText("Sicherung wiederherstellen")
+        compose.onNodeWithText("Zuletzt gesichert: 01.10.2026").assertIsDisplayed()
+
+        // The tab bar brings back where the user was: still the backup page.
+        compose.onNode(tab("Übersicht")).performClick()
+        waitForText("Letzte Sicherung vor 5 Monaten")
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Sicherung wiederherstellen")
+
+        // A button or the widget that says "settings" means the list, not the page left open.
+        compose.onNode(tab("Übersicht")).performClick()
+        waitForText("Letzte Sicherung vor 5 Monaten")
+        request = TabRequest(Tab.SETTINGS)
+        compose.waitForIdle()
+        compose.onNode(tab("Einstellungen")).assertIsSelected()
+        compose.onAllNodesWithText("Sicherung wiederherstellen").assertCountEquals(0)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
     fun `tapping a tab switches to it`() {
         compose.onNode(tab("Kalender")).performClick()
 
         compose.onNode(tab("Kalender")).assertIsSelected()
         waitForText("Einstellungen öffnen")
+    }
+
+    private fun openCalendar(name: String = "Kalender") {
+        compose.onNode(tab(name)).performClick()
+        compose.waitForIdle()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a second tap on the open calendar tab goes back to this month`() {
+        openCalendar()
+        planner.showMonth(YearMonth.of(2027, 9))
+        compose.waitForIdle()
+
+        compose.onNode(tab("Kalender")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2027, 3), planner.calendarMonth.value)
+        assertEquals(CalendarMode.MONTH, planner.calendarMode.value)
+        compose.onNode(tab("Kalender")).assertIsSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `in the year view the second tap goes back to this year and keeps the view`() {
+        openCalendar()
+        planner.showMode(CalendarMode.YEAR)
+        planner.showMonth(YearMonth.of(2028, 6))
+        compose.waitForIdle()
+
+        compose.onNode(tab("Kalender")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(2027, planner.calendarMonth.value.year)
+        assertEquals(CalendarMode.YEAR, planner.calendarMode.value)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the first tap on the calendar tab opens it where it was left`() {
+        planner.showMonth(YearMonth.of(2027, 9))
+
+        compose.onNode(tab("Kalender")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2027, 9), planner.calendarMonth.value)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a second tap on the other tabs changes nothing`() {
+        planner.showMonth(YearMonth.of(2027, 9))
+        compose.onNode(tab("Übersicht")).performClick()
+        compose.onNode(tab("Einstellungen")).performClick()
+        compose.onNode(tab("Einstellungen")).performClick()
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2027, 9), planner.calendarMonth.value)
+        compose.onNode(tab("Einstellungen")).assertIsSelected()
+    }
+
+    private fun clickLabel(tab: SemanticsMatcher) =
+        compose
+            .onNode(tab)
+            .fetchSemanticsNode()
+            .config
+            .let {
+                if (SemanticsActions.OnClick in
+                    it
+                ) {
+                    it[SemanticsActions.OnClick].label
+                } else {
+                    null
+                }
+            }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `TalkBack hears what a tap on the open calendar tab does`() {
+        openCalendar()
+        assertEquals("Zum aktuellen Monat", clickLabel(tab("Kalender")))
+
+        planner.showMode(CalendarMode.YEAR)
+        compose.waitForIdle()
+        assertEquals("Zum aktuellen Jahr", clickLabel(tab("Kalender")))
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `the English action label says this month`() {
+        openCalendar("Calendar")
+        assertEquals("Go to this month", clickLabel(tab("Calendar")))
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the calendar tab has no action label while another tab is open`() {
+        assertEquals(null, clickLabel(tab("Kalender")))
+        assertEquals(null, clickLabel(tab("Einstellungen")))
     }
 
     @Test
@@ -332,7 +464,7 @@ class AppRootTest {
         compose.waitUntil(5_000) { fixture.date("2027-03-15") in marked().marks }
         // Let the screens read the restored day before the database closes after the test.
         compose.waitUntil(5_000) {
-            planner.calendar.value?.markOn(fixture.date("2027-03-15")) !=
+            planner.calendarView(2027).value?.markOn(fixture.date("2027-03-15")) !=
                 null
         }
         waitUntilGone("1 Tag entfernt")

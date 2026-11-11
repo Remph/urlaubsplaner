@@ -15,7 +15,7 @@ the maintainer asks. The rules in `CLAUDE.md` apply unchanged.
 | 25 | Lock to portrait on phones only (smallest width under 600 dp). Tablets keep rotating, which leaves room for a tablet layout later (parked 26) | parked 25 | `MainActivity` (the manifest cannot tell a phone from a tablet: set `requestedOrientation` at start from `smallestScreenWidthDp`), `WidgetConfigActivity` | none |
 | 28 | Calendar swipe that follows the finger and snaps (a pager) | parked 28 | `CalendarScreen` (`ScreenFrame` + `Modifier.swipeToStep` in `SwipeToStep.kt`, `AnimatedContent` keyed on `CalendarPage.generation`), `CalendarPage.kt`, `Highlight.kt` | none |
 | S1 | Backup reminder: the backup page shows when the last backup was saved, and after 3 months without one a quiet line on the Übersicht reminds you | Claude's suggestion, accepted 2026-11-10 | `settings/` backup page, `OverviewScreen`, a small local store like `appearance/AppearanceStore.kt` | none in Room or the backup file (see below) |
-| 24 | Clearer date picker that makes the picked range obvious | parked 24 | `planner/DaySheet.kt` (`EndDatePicker`: M3 `DatePicker` in a `DatePickerDialog`, end day in the same year as the start) | none |
+| 24 | Clearer date picker that makes the picked range obvious | parked 24 | `planner/DaySheet.kt` (`EndDatePicker`: M3 `DatePicker` in a `DatePickerDialog`, end day in the same year as the start; replaced by `planner/RangePicker.kt`, see "Decided in the design round") | none |
 | S2 | Mark a range by long-pressing a day in the month view and dragging across the days | Claude's suggestion, accepted 2026-11-10 | `DayCells.kt` / `MonthGrid`, `PlannerViewModel` (the "Bis" range of the day sheet already marks ranges) | none |
 
 Not in 0.11.0: app shortcuts on the app icon (suggestion S3; the maintainer parked it for 1.0.0 on
@@ -46,12 +46,26 @@ What the code and the answers say about each:
   settings. With portrait locked (25) on phones, landscape is only a tablet check. Design question
   first: one shared pager for month and year (recommended) or only months; and how far neighbour
   pages are drawn (recommended: the next page appears only while you drag, no peeking).
+- **28, as built (T4, `feature/0-11-pager-swipe`).** One `HorizontalPager` for month and year
+  (made again when the mode changes), no peeking: the next page shows only while a finger drags.
+  The ViewModel stays the truth for month and mode; `PagerFollowsViewModel` in `CalendarScreen`
+  scrolls the pager when the arrows or "today" change the month, and sets the month when a swipe
+  has settled (with the tick; the arrows have none). Every page reads the view of its own year
+  (`PlannerViewModel.calendarView(year)`), and the ViewModel keeps the years next to the page in
+  view read ahead, so a page dragged in from December to January is not blank. This replaced
+  `CalendarPage`, its `generation` and the `AnimatedContent` slide. The header stays; each page
+  scrolls on its own (a pager around the page's scroll, not inside it, or TalkBack would scroll
+  the pager when it reaches for an item below the screen). The title moves with the pager.
+  A swipe past the first or last month stretches the page and gives the "no" tick. The decision
+  was asked of the maintainer on a card (recommended option built; the card's answer is noted in
+  the PR).
 - **S1.** The last-backup date is a fact about this phone, not user data: it goes into a small local
   store (SharedPreferences or DataStore like `AppearanceStore`), not into Room and not into the backup
   file, so no migration and no backup format change. It is set when "Sicherung speichern" succeeds.
   A restore does not count. Logic with an injected clock and unit tests: hint when the last backup
   is more than 90 days old, or when there has never been one and marked days exist (design question:
-  how soon after the first marks; recommended 14 days). The hint is one line on the Übersicht with
+  how soon after the first marks; the maintainer chose 14 days on 2026-11-10; he also chose the very bottom of
+  the Übersicht and the wording "Letzte Sicherung vor 4 Monaten", see `docs/plan.md`). The hint is one line on the Übersicht with
   a tap to the backup page, and no notification (no new permission). Design questions first (mock-up):
   where the line sits on the Übersicht and its wording in German and English, for example "Letzte
   Sicherung vor 4 Monaten" / "Last backup 4 months ago". The backup page shows "Zuletzt gesichert:
@@ -70,6 +84,49 @@ What the code and the answers say about each:
     ticks. A long press is needed so the drag doesn't fight the pager swipe (28) or the scroll. The
     range can go across weeks, and stops at the month edge: across months is the picker's job. TalkBack
     users keep the sheet and the picker, so drag is never the only way.
+
+### Decided in the design round (T3, 2026-11-10)
+
+Mock-ups: `design/0-11-range/` in the project folder (`index.html` and one PNG per screen). The
+maintainer answered three cards the same evening and took the recommended option each time.
+
+- **24, built in T3:** an own month grid in a dialog ("Bis wann?", `RangePickerDialog` in
+  `planner/RangePicker.kt`), not the Material 3 `DateRangePicker` and not a styled single picker.
+  The M3 `DatePicker` has no slot for own day tiles, so a "styled single picker" would have been an
+  own grid anyway. The grid uses the calendar's tiles (holidays gold, school holidays lilac and a
+  bar, days already marked with a dot). The first day stays the day that was tapped (days before it
+  are off), the first day and last day are filled, the days between are tinted, a holiday inside
+  stays gold with a ring because it costs nothing. The arrows stop at the first day's month and at
+  December. Under the grid the cost and the days left read as in the sheet ("Kostet 8 Urlaubstage,
+  danach noch 25 übrig"), plus a note about days that cost nothing. OK hands the end day to the sheet.
+- **S2, built in T5 after the pager (T4); the maintainer chose these:**
+  - Letting go opens the day sheet with the range filled in (start as the title, "Bis" set, cost
+    shown). No popup and no marking at once. The sheet needs one optional parameter for the end day
+    for this (`initialEnd`), which T3 did not add because nothing used it yet.
+  - The range stops at the month's first and last day. No paging while dragging (that would fight
+    the pager). Dragging backwards works: the earlier day becomes the start of the range.
+  - Not decided by a card, so T5 starts from this and asks only if it turns out wrong: long press
+    with the system's long-press time; a tick (`SegmentTick`) for every new day and one `Reject` at
+    the month edge; a small bubble above the finger with the cost ("4 Tage"); the range looks as in
+    the picker (reuse the picker's tile colours instead of writing them twice); TalkBack users keep
+    the sheet and the picker. Handover for T5: `handover/0-11-0-t5-drag-to-mark.md`.
+
+- **S2, as built (T5, session branch `claude/project-thread-ow2rfh`).** `planner/DragToMark.kt`
+  holds the gesture (`longPressDrag`), the maths (`dragTargetAt`, `MarkDrag`, `costlyBounds`) and
+  the bubble (`DragBubble`, a popup, so it can sit over the header); `MonthGrid` in `DayCells.kt`
+  uses them. The gesture works on the Initial pointer pass: before the long press time nothing is
+  touched (a swipe starts the pager, a tap is a click), after it every change is consumed on the
+  way down, so the pager and the scroll stay still and the day under the finger gets no click.
+  What was not decided by a card and was built as recommended: a long press on a day that costs
+  nothing (weekend, holiday) gives one `Reject` tick and swallows the rest of that touch (no sheet);
+  on a blank cell nothing happens; the first day gives the `LongPress` feedback, each new day
+  `SegmentTick`, the month's edge one `Reject`; the run is cut to its first and last day that
+  costs vacation before the sheet opens (`costlyBounds`), so the sheet opens on a day it can mark;
+  the bubble counts whole days (`dragCost`) and is shown from the first day ("1 Tag"); a touch
+  the system cancels opens nothing. The picker's colours are one function now
+  (`rangeFill`, `rangeText`, `rangeRing`, `RangeTileDetails` in `RangePicker.kt`), used by the
+  picker's cells and by the month cells under a drag. `DaySheet` got `initialEnd`. Year view: no
+  drag. No Room, backup or string change (the bubble reuses `days_one` and `days_other`).
 
 ## Order and threads
 

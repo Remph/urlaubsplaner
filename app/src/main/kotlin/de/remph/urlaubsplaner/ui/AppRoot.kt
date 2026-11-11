@@ -26,9 +26,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -40,6 +43,7 @@ import de.remph.urlaubsplaner.planner.CalendarScreen
 import de.remph.urlaubsplaner.planner.OverviewScreen
 import de.remph.urlaubsplaner.planner.PlannerViewModel
 import de.remph.urlaubsplaner.settings.SettingsHost
+import de.remph.urlaubsplaner.settings.SettingsPage
 import de.remph.urlaubsplaner.settings.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -82,8 +86,11 @@ fun AppRoot(
     // The old settings screen is still composed while it fades out and saves its state when it
     // goes, so removing the state is not enough; a new key makes the next settings screen start fresh.
     var settingsGeneration by rememberSaveable { mutableIntStateOf(0) }
+    // The page a fresh settings screen opens on: the list, or the backup page from the overview's hint.
+    var settingsStart by rememberSaveable { mutableStateOf(SettingsPage.LIST) }
     val show = { target: Tab ->
         if (target == Tab.SETTINGS && tab != Tab.SETTINGS) {
+            settingsStart = SettingsPage.LIST
             tabState.removeState(stateKey(Tab.SETTINGS, settingsGeneration))
             settingsGeneration++
         }
@@ -97,11 +104,38 @@ fun AppRoot(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             NavigationBar {
+                val calendarMode by plannerViewModel.calendarMode.collectAsStateWithLifecycle()
+                val jumpLabel =
+                    stringResource(
+                        if (calendarMode == CalendarMode.YEAR) {
+                            R.string.nav_calendar_this_year
+                        } else {
+                            R.string.nav_calendar_this_month
+                        },
+                    )
                 for (entry in Tab.entries) {
                     val label = stringResource(entry.label)
+                    // A second tap on the open Kalender tab goes back to today; the other tabs
+                    // do nothing then.
+                    val backToToday = tab == Tab.CALENDAR && entry == Tab.CALENDAR
                     NavigationBarItem(
                         selected = tab == entry,
-                        onClick = { tab = entry },
+                        onClick = {
+                            if (backToToday) plannerViewModel.showToday()
+                            tab = entry
+                        },
+                        // TalkBack says what the tap will do instead of a plain "activate".
+                        modifier =
+                            if (backToToday) {
+                                Modifier.semantics {
+                                    onClick(label = jumpLabel) {
+                                        plannerViewModel.showToday()
+                                        true
+                                    }
+                                }
+                            } else {
+                                Modifier
+                            },
                         icon = { Icon(entry.icon, contentDescription = null) },
                         // One line, shrunk when it does not fit: at a large system font
                         // "Einstellungen" broke in the middle of the word.
@@ -127,6 +161,10 @@ fun AppRoot(
                             plannerViewModel,
                             padding,
                             onOpenSettings = { show(Tab.SETTINGS) },
+                            onOpenBackup = {
+                                show(Tab.SETTINGS)
+                                settingsStart = SettingsPage.BACKUP
+                            },
                             onOpenMonth = {
                                 plannerViewModel.showMode(CalendarMode.MONTH)
                                 plannerViewModel.showMonth(it)
@@ -148,7 +186,13 @@ fun AppRoot(
                     }
 
                     Tab.SETTINGS -> {
-                        SettingsHost(settingsViewModel, appearanceStore, showMessage, padding)
+                        SettingsHost(
+                            settingsViewModel,
+                            appearanceStore,
+                            showMessage,
+                            padding,
+                            settingsStart,
+                        )
                     }
                 }
             }

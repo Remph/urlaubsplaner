@@ -1,8 +1,11 @@
 package de.remph.urlaubsplaner.planner
 
+import android.provider.Settings
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -12,11 +15,15 @@ import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.cancel
+import androidx.compose.ui.test.down
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.moveBy
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -24,10 +31,12 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -46,8 +55,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.time.MonthDay
+import java.time.YearMonth
 
 /** Composes the real calendar: the month, the colours in words, and marking through the sheet. */
 @RunWith(AndroidJUnit4::class)
@@ -56,6 +67,7 @@ class CalendarScreenTest {
     val compose = createComposeRule()
 
     private lateinit var fixture: PlannerFixture
+    private lateinit var model: PlannerViewModel
 
     @Before
     fun open() {
@@ -72,13 +84,14 @@ class CalendarScreenTest {
         waitFor: String = "März 2027",
         fontScale: Float = 1f,
     ) {
+        model = fixture.viewModel()
         compose.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(
                 LocalDensity provides Density(density.density, fontScale = fontScale),
                 LocalHapticFeedback provides haptics,
             ) {
-                CalendarScreen(fixture.viewModel(), PaddingValues(), onOpenSettings = {})
+                CalendarScreen(model, PaddingValues(), onOpenSettings = {})
             }
         }
         waitForText(waitFor)
@@ -90,6 +103,20 @@ class CalendarScreenTest {
     ) = compose.waitUntil(5_000) {
         compose.onAllNodesWithText(text, substring).fetchSemanticsNodes().isNotEmpty()
     }
+
+    /**
+     * The days are gone from the screen: the page that was dragged in and let go again may stay
+     * composed just beside it for a moment, so this looks at where the days are, not whether they
+     * exist.
+     */
+    private fun waitForNoDay(description: String) =
+        compose.waitUntil(5_000) {
+            val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+            compose
+                .onAllNodes(hasContentDescription(description, substring = true))
+                .fetchSemanticsNodes()
+                .none { it.boundsInRoot.overlaps(screen) }
+        }
 
     private fun day(description: String) =
         compose.onNode(hasContentDescription(description, substring = true))
@@ -103,6 +130,18 @@ class CalendarScreenTest {
         compose.onNodeWithText("So").assertIsDisplayed()
         compose.onNodeWithText("Monat").assertIsDisplayed()
         compose.onNodeWithText("Jahr").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the month card sits as far in as the header and no further`() {
+        show()
+
+        // The frame has 16 dp at the side and the card 16 dp inside it. A second side padding on
+        // the page body once set the whole body 16 dp deeper than the header above it.
+        // The legend under the card has the word too; the card comes first.
+        val card = compose.onAllNodes(hasText("Genommen", substring = true))[0]
+        assertEquals(32f, card.getUnclippedBoundsInRoot().left.value, 0.5f)
     }
 
     @Test
@@ -464,14 +503,26 @@ class CalendarScreenTest {
         compose.waitForIdle()
     }
 
-    /** Where the page ends and where the screen does, to see whether the page scrolls. */
+    private fun handle(expanded: Boolean) =
+        compose.onNodeWithContentDescription(
+            if (expanded) "Jahresübersicht kleiner anzeigen" else "Jahresübersicht größer anzeigen",
+        )
+
+    /**
+     * Where the page ends and where the screen does, to see whether the page scrolls. The handle
+     * is the last thing on the page while the rows are expanded (the legend is gone then), and the
+     * frame has no padding under it then: the handle has air of its own. The rows are whole
+     * pixels, so what is left is less than one pixel for each of the twelve rows.
+     */
     private fun assertPageFillsScreenWithoutScrolling() {
-        val legendBottom = compose.onNodeWithText("Geplant").getBoundsInRoot().bottom
+        val handleBottom = handle(expanded = true).getBoundsInRoot().bottom
         val screen = compose.onRoot().getBoundsInRoot().height
-        // 16 dp frame padding below the legend; the rows are whole dp, so up to 12 dp are left.
-        assertTrue("$legendBottom of $screen", legendBottom <= screen - 16.dp)
-        assertTrue("$legendBottom of $screen", legendBottom >= screen - 16.dp - 13.dp)
+        val slack = with(compose.density) { 12.toDp() }
+        assertTrue("$handleBottom of $screen", handleBottom <= screen)
+        assertTrue("$handleBottom of $screen", handleBottom >= screen - slack)
     }
+
+    private fun legendItems() = compose.onAllNodesWithText("Geplant")
 
     @Test
     @Config(qualifiers = "de-w411dp-h900dp")
@@ -485,13 +536,130 @@ class CalendarScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "de-w411dp-h900dp")
-    fun `the legend entry for granted days takes room from the rows`() {
-        turnGrantedDaysOn()
+    @Config(qualifiers = "de-w411dp-h891dp-420dpi")
+    fun `the expanded rows leave less than a pixel per row on a phone with 2_6 pixels per dp`() {
         showYear()
         expandRows()
 
         assertExpanded()
+        assertPageFillsScreenWithoutScrolling()
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `a note under the expanded rows keeps the frame padding below it and the page fits`() {
+        runBlocking {
+            fixture.repository.saveEntitlement(
+                YearEntitlement(2026, VacationDays.of(30), VacationDays.of(0), MonthDay.of(3, 31)),
+            )
+        }
+        showYear()
+        compose.onNodeWithContentDescription("Vorheriges Jahr").performClick()
+        waitForText("2026")
+        expandRows()
+        compose.waitForIdle()
+
+        // 2026 has no school holidays in the test file: the note is the last thing on the page,
+        // so unlike the handle it must not sit against the bottom edge.
+        val note = compose.onNodeWithText("Schulferien", substring = true)
+        note.assertIsDisplayed()
+        val screen = compose.onRoot().getBoundsInRoot().height
+        val noteBottom = note.getBoundsInRoot().bottom
+        assertTrue("$noteBottom of $screen", noteBottom <= screen - 16.dp)
+        // The page fills the screen to within the whole-pixel slack of the rows and does not scroll.
+        val slack = with(compose.density) { 12.toDp() }
+        assertTrue("$noteBottom of $screen", noteBottom >= screen - 16.dp - slack - 8.dp)
+        val grid2026 =
+            compose
+                .onNode(hasContentDescription("Jahresübersicht 2026", substring = true))
+                .getBoundsInRoot()
+                .height
+        assertTrue("$grid2026", grid2026 > YearRowsCompact * 12)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the legend is under the compact year, gone while the rows are expanded and back after`() {
+        showYear()
+        legendItems().assertCountEquals(1)
+        compose.onNodeWithText("Feiertag").assertExists()
+
+        expandRows()
+        legendItems().assertCountEquals(0)
+        compose.onAllNodesWithText("Feiertag").assertCountEquals(0)
+        compose.onAllNodesWithText("Schulferien").assertCountEquals(0)
+
+        handle(expanded = true).performScrollTo().performClick()
+        compose.waitForIdle()
+        legendItems().assertCountEquals(1)
+        yearGrid().assertHeightIsEqualTo(YearRowsCompact * 12)
+        // Back where it was: the legend sits under the handle, a frame gap away.
+        val below = compose.onNodeWithText("Geplant").getBoundsInRoot().top
+        assertTrue(below > handle(expanded = false).getBoundsInRoot().bottom)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the month view keeps its legend whether or not the year rows are expanded`() {
+        showYear()
+        expandRows()
+        compose.onNodeWithText("Monat").performClick()
+        waitForText("März 2027")
+        compose.waitForIdle()
+
+        compose.onAllNodesWithText("Schulferien").assertCountEquals(1)
+        compose.onAllNodesWithText("Feiertag").assertCountEquals(1)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the legend with the granted entry goes too, and the rows fill the same room`() {
+        showYear()
+        expandRows()
+        val without = gridHeight()
+        handle(expanded = true).performScrollTo().performClick()
+        compose.waitForIdle()
+        turnGrantedDaysOn()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("Genehmigt").fetchSemanticsNodes().isNotEmpty()
+        }
+        expandRows()
+
+        compose.onAllNodesWithText("Genehmigt").assertCountEquals(0)
+        assertEquals(without, gridHeight())
+        assertPageFillsScreenWithoutScrolling()
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the rows grow into the room of the legend in one move without a second jump`() {
+        showYear()
+        compose.waitForIdle()
+        compose.mainClock.autoAdvance = false
+        handle(expanded = false).performScrollTo().performClick()
+
+        val heights = mutableListOf<Float>()
+        val legendAlphas = mutableListOf<Int>()
+        repeat(120) {
+            compose.mainClock.advanceTimeByFrame()
+            heights += gridHeight().value
+            legendAlphas += legendItems().fetchSemanticsNodes().size
+        }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        val end = gridHeight().value
+
+        // Never shrinks on the way, never overshoots the end: the target did not move while the
+        // legend was leaving (it would jump up and then settle if the fit counted the legend's
+        // remaining room).
+        assertTrue("$heights", heights.zipWithNext().all { (a, b) -> b >= a - 0.01f })
+        assertTrue("$heights", heights.all { it <= end + 0.5f })
+        assertEquals(end, heights.last(), 0.5f)
+        // Settled after the spring, not still chasing a target that moves with the legend: 12
+        // frames of 16 ms (the row animation alone takes 11).
+        assertEquals("$heights", end, heights[12], 1f)
+        // The legend is there while it fades and gone at the end.
+        assertTrue("$legendAlphas", legendAlphas.first() == 1 && legendAlphas.last() == 0)
         assertPageFillsScreenWithoutScrolling()
     }
 
@@ -502,11 +670,39 @@ class CalendarScreenTest {
         expandRows()
 
         assertExpanded()
+        legendItems().assertCountEquals(0)
         assertPageFillsScreenWithoutScrolling()
     }
 
     @Test
-    @Config(qualifiers = "de-w360dp-h640dp")
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `the year sliding in while expanded has no legend and keeps its rows`() {
+        runBlocking {
+            fixture.repository.saveEntitlement(
+                YearEntitlement(2026, VacationDays.of(30), VacationDays.of(0), MonthDay.of(3, 31)),
+            )
+        }
+        showYear()
+        expandRows()
+
+        compose.onNodeWithContentDescription("Vorheriges Jahr").performClick()
+        waitForText("2026")
+        compose.waitForIdle()
+
+        // 2026 has a note about unknown school holidays under the rows, so its rows are lower than
+        // 2027's; what counts is that the legend is not there and the rows are not at their least.
+        legendItems().assertCountEquals(0)
+        compose.onAllNodesWithText("Schulferien").assertCountEquals(0)
+        val grid2026 =
+            compose
+                .onNode(hasContentDescription("Jahresübersicht 2026", substring = true))
+                .getBoundsInRoot()
+                .height
+        assertTrue("$grid2026", grid2026 > YearRowsMin * 12)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w360dp-h600dp")
     fun `on a small phone the rows stop at the minimum and the page scrolls`() {
         showYear()
         expandRows()
@@ -552,20 +748,24 @@ class CalendarScreenTest {
         showYear()
         compose.mainClock.autoAdvance = false
 
-        // 2027 has Urlaubstage, 2028 does not: the other year's empty state must not show under
-        // this year's title, in either direction.
+        // 2027 has Urlaubstage, 2028 does not. Both pages are on screen while one slides in, but
+        // each keeps its own year's content: the empty state of a year only ever sits in the
+        // page of that year, in either direction.
         for (button in listOf("Nächstes Jahr", "Vorheriges Jahr")) {
             compose.onNodeWithContentDescription(button).performClick()
             repeat(80) {
                 Thread.sleep(5)
                 compose.mainClock.advanceTimeByFrame()
-                assertEmptyStatesMatchTitles()
+                assertEmptyStatesBelongToTheirPages()
             }
         }
         compose.mainClock.autoAdvance = true
         compose.waitForIdle()
-        assertEmptyStatesMatchTitles()
+        assertEmptyStatesBelongToTheirPages()
         compose.onAllNodesWithText("Für 2028", substring = true).assertCountEquals(0)
+        compose
+            .onAllNodes(hasContentDescription("Jahresübersicht 20", substring = true))
+            .assertCountEquals(1)
     }
 
     @Test
@@ -628,16 +828,24 @@ class CalendarScreenTest {
         }
     }
 
-    private fun assertEmptyStatesMatchTitles() {
+    private fun assertEmptyStatesBelongToTheirPages() {
+        val grids =
+            compose
+                .onAllNodes(hasContentDescription("Jahresübersicht 20", substring = true))
+                .fetchSemanticsNodes()
+                .size
         for (year in 2026..2028) {
             val empty =
                 compose
                     .onAllNodesWithText("Für $year sind noch keine", substring = true)
                     .fetchSemanticsNodes()
-            val title = compose.onAllNodesWithText("$year").fetchSemanticsNodes()
+            val grid =
+                compose
+                    .onAllNodes(hasContentDescription("Jahresübersicht $year", substring = true))
+                    .fetchSemanticsNodes()
             assertTrue(
-                "the empty state of $year without its title",
-                empty.isEmpty() || title.isNotEmpty(),
+                "the empty state of $year without its own page ($grids pages)",
+                empty.isEmpty() || grid.isNotEmpty(),
             )
         }
     }
@@ -760,6 +968,213 @@ class CalendarScreenTest {
         val stored = runBlocking { fixture.repository.readAll() }
         assertEquals(DayMark.HALF, stored.marks.getValue(fixture.date("2027-03-15")))
         assertEquals(setOf(fixture.date("2027-03-15")), stored.granted)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the next month follows the finger and is only chosen when it is let go`() {
+        show()
+        waitForText("Karfreitag")
+        compose
+            .onAllNodes(
+                hasContentDescription("1. April 2027", substring = true),
+            ).assertCountEquals(0)
+
+        compose.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(-width * 0.6f, 0f), delayMillis = 100)
+        }
+        compose.waitForIdle()
+
+        // Both months are on screen while the finger is down, and nothing has been decided yet.
+        day("Donnerstag, 25. März 2027").assertExists()
+        day("Donnerstag, 1. April 2027").assertExists()
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+
+        compose.onRoot().performTouchInput { up() }
+        waitForText("April 2027")
+        compose.waitForIdle()
+        assertEquals(YearMonth.of(2027, 4), model.calendarMonth.value)
+        compose
+            .onAllNodes(
+                hasContentDescription("25. März 2027", substring = true),
+            ).assertCountEquals(0)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a drag that is let go before the middle snaps back to the month`() {
+        show()
+        waitForText("Karfreitag")
+
+        compose.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(-width / 5f, 0f), delayMillis = 400)
+            up()
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithText("März 2027").assertIsDisplayed()
+        waitForNoDay("1. April 2027")
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+        assertEquals(emptyList<HapticFeedbackType>(), haptics.performed)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `swiping from December goes on into the January of the next year with its own holidays`() {
+        show()
+        repeat(9) { compose.onNodeWithContentDescription("Nächster Monat").performClick() }
+        waitForText("Dezember 2027")
+
+        compose.onRoot().performTouchInput { swipeLeft() }
+        waitForText("Januar 2028")
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2028, 1), model.calendarMonth.value)
+        // 1 January 2028 is a Saturday and a holiday of 2028; the page read the view of 2028.
+        compose.onNodeWithText("Neujahr").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Dezember 2027").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a page dragged in from the next year already has its days`() {
+        show()
+        repeat(9) { compose.onNodeWithContentDescription("Nächster Monat").performClick() }
+        waitForText("Dezember 2027")
+        compose.waitForIdle()
+
+        compose.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(-width / 3f, 0f), delayMillis = 100)
+        }
+        compose.waitForIdle()
+
+        day("Samstag, 1. Januar 2028").assertExists()
+        compose.onRoot().performTouchInput { cancel() }
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a swipe after an arrow goes on from where the arrow stopped`() {
+        show()
+
+        compose.onNodeWithContentDescription("Nächster Monat").performClick()
+        waitForText("April 2027")
+        compose.onRoot().performTouchInput { swipeLeft() }
+        waitForText("Mai 2027")
+        compose.onNodeWithContentDescription("Vorheriger Monat").performClick()
+        waitForText("April 2027")
+        compose.onRoot().performTouchInput { swipeRight() }
+        waitForText("März 2027")
+
+        compose.waitForIdle()
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `tapping the arrow twice quickly ends two months on and stays there`() {
+        show()
+
+        compose.onNodeWithContentDescription("Nächster Monat").performClick()
+        compose.onNodeWithContentDescription("Nächster Monat").performClick()
+        waitForText("Mai 2027")
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2027, 5), model.calendarMonth.value)
+        compose.onNodeWithText("Mai 2027").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `showing today from elsewhere scrolls the pager back to this month`() {
+        show()
+        repeat(4) { compose.onNodeWithContentDescription("Nächster Monat").performClick() }
+        waitForText("Juli 2027")
+
+        compose.runOnUiThread { model.showToday() }
+
+        waitForText("März 2027")
+        compose.waitForIdle()
+        day("Donnerstag, 25. März 2027").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the header says one title that moves with the pager`() {
+        show()
+
+        compose.onAllNodesWithText("März 2027").assertCountEquals(1)
+        compose.onAllNodesWithText("April 2027").assertCountEquals(0)
+
+        compose.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(-width / 3f, 0f), delayMillis = 100)
+        }
+        compose.waitForIdle()
+        // One heading for TalkBack, with the title of the page in view; the neighbour's title is
+        // only drawn.
+        compose.onAllNodesWithText("März 2027").assertCountEquals(1)
+        compose.onAllNodesWithText("April 2027").assertCountEquals(0)
+        compose.onRoot().performTouchInput { cancel() }
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h2400dp")
+    fun `a swipe also works under a short page`() {
+        show()
+        waitForText("Karfreitag")
+
+        compose.onRoot().performTouchInput {
+            swipeLeft(startX = width * 0.9f, endX = width * 0.1f, durationMillis = 200)
+        }
+        waitForText("April 2027")
+
+        compose.onRoot().performTouchInput {
+            swipe(Offset(width * 0.1f, height - 40f), Offset(width * 0.9f, height - 40f), 200)
+        }
+        waitForText("März 2027")
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `with animations removed the arrow shows the next month at once`() {
+        Settings.Global.putFloat(
+            RuntimeEnvironment.getApplication().contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            0f,
+        )
+        try {
+            show()
+            compose.mainClock.autoAdvance = false
+
+            compose.onNodeWithContentDescription("Nächster Monat").performClick()
+            repeat(3) { compose.mainClock.advanceTimeByFrame() }
+
+            compose.onNodeWithText("April 2027").assertExists()
+            compose.mainClock.autoAdvance = true
+        } finally {
+            Settings.Global.putFloat(
+                RuntimeEnvironment.getApplication().contentResolver,
+                Settings.Global.ANIMATOR_DURATION_SCALE,
+                1f,
+            )
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `in the year view a swipe moves the year and keeps the month of the year`() {
+        showYear()
+
+        compose.onRoot().performTouchInput { swipeLeft() }
+        waitForText("2028")
+        compose.waitForIdle()
+
+        assertEquals(YearMonth.of(2028, 3), model.calendarMonth.value)
+        assertEquals(CalendarMode.YEAR, model.calendarMode.value)
     }
 
     @Test

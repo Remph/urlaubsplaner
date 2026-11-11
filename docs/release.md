@@ -93,7 +93,7 @@ the language. Missing rules go into a new `app/proguard-rules.pro` (not there ye
 
 The standard check (`./gradlew lint test assembleDebug spotlessCheck`) is not enough for a release;
 the instrumented tests (`connectedDebugAndroidTest`, on both emulators, not the phone) and the widget cannot run in the cloud. Install the signed
-release APK on the phone (uninstall the debug build first, the keys differ) and walk through: first
+release APK on the phone (the debug build has its own application ID `de.remph.urlaubsplaner.debug`, so it can stay installed next to it) and walk through: first
 start, choose a Land, enter the entitlement, mark days, bridge days, widget (small and big),
 backup export and import, calendar export, German and English, dark mode.
 
@@ -119,7 +119,7 @@ Quick Start Guide). `f-droid.org` itself is not reachable from the cloud, `gitla
 
 **What is ready in this repo** (`fastlane/metadata/android/`): `de-DE` and `en-US` with `title.txt`,
 `short_description.txt` (under 80 characters, no trailing dot), `full_description.txt`,
-`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
+`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
 F-Droid requires `en-US`; `de-DE` is extra. Descriptions use only the HTML tags F-Droid allows.
 
 **What F-Droid checks**: free licence (GPL-3.0), only free dependencies and tools (no Google Play

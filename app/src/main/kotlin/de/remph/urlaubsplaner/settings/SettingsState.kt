@@ -4,6 +4,7 @@ import de.remph.urlaubsplaner.core.backup.BackupData
 import de.remph.urlaubsplaner.core.backup.BackupSummary
 import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.settings.UserSettings
+import java.time.LocalDate
 import java.time.MonthDay
 
 /**
@@ -21,6 +22,8 @@ data class SettingsUiState(
     val markedDays: Int,
     val pendingImport: ImportPlan?,
     val notice: Notice?,
+    /** The day a backup was last saved on this phone, null if never. */
+    val lastBackup: LocalDate? = null,
 )
 
 /**

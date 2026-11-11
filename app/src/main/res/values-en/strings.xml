@@ -89,6 +89,15 @@
         <item quantity="one">%d year with an entitlement</item>
         <item quantity="other">%d years with an entitlement</item>
     </plurals>
+    <string name="backup_last">Last saved: %1$s</string>
+    <string name="backup_never">No backup yet</string>
+    <!-- The quiet line on the overview -->
+    <plurals name="backup_hint_old">
+        <item quantity="one">Last backup %d month ago</item>
+        <item quantity="other">Last backup %d months ago</item>
+    </plurals>
+    <string name="backup_hint_never">No backup saved yet</string>
+    <string name="backup_hint_open">Open backup</string>
     <string name="notice_saved">Saved.</string>
     <string name="notice_exported">Backup saved.</string>
     <string name="notice_imported">Backup restored.</string>
@@ -127,6 +136,9 @@
     <!-- Navigation -->
     <string name="nav_overview">Overview</string>
     <string name="nav_calendar">Calendar</string>
+    <!-- What TalkBack says for a tap on the open calendar tab. -->
+    <string name="nav_calendar_this_month">Go to this month</string>
+    <string name="nav_calendar_this_year">Go to this year</string>
     <string name="back">Back</string>
 
     <!-- Settings list -->
@@ -227,6 +239,12 @@
     <string name="mark_full">Whole day</string>
     <string name="mark_half">Half day</string>
     <string name="until">Until: %1$s</string>
+    <string name="range_title">Until when?</string>
+    <string name="range_from">From %1$s</string>
+    <string name="range_first_day">First day</string>
+    <string name="range_last_day">Last day</string>
+    <string name="range_inside">In the range</string>
+    <string name="range_free_note">Days off and public holidays are not counted.</string>
     <string name="mark_save">Add</string>
     <string name="mark_change">Change</string>
     <string name="mark_remove">Remove</string>

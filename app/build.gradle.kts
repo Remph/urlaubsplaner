@@ -46,8 +46,8 @@ android {
         targetSdk = 37
         // versionCode = major * 10000 + minor * 100 + patch (0.10.0 is 1000, 1.0.0 is 10000). F-Droid
         // names the changelog after it: fastlane/metadata/android/*/changelogs/<versionCode>.txt.
-        versionCode = 1001
-        versionName = "0.10.1"
+        versionCode = 1100
+        versionName = "0.11.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -63,6 +63,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // A different application ID, so the debug build installs next to the release build
+            // (own data, own widgets, own file provider). The permanent ID stays the release one.
+            applicationIdSuffix = ".debug"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
             // R8 stays off for 0.9.0: Room, Glance, WorkManager and kotlinx-serialization reach

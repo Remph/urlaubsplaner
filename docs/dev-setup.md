@@ -67,6 +67,11 @@ place, so it is the one used here. Both can be installed side by side.
   `targetSdk`). Use x86_64, not the 32-bit x86 image. If an emulator will not start, check that
   virtualization is on in the BIOS and "Windows Hypervisor Platform" is on in the Windows
   features.
+- **Debug and release side by side:** the debug build has the application ID
+  `de.remph.urlaubsplaner.debug` (suffix `.debug`) and the label "Urlaubsplaner Debug". It is a
+  separate app from the release build `de.remph.urlaubsplaner`: own data, own widgets, and both can
+  be installed on the same phone. Data does not move between them by itself; use Einstellungen >
+  Datensicherung (export in one, import in the other).
 - **APK signatures:** the debug APK built on the PC is signed with the PC's own debug key, the
   cloud builds with the shared cloud debug key. A phone does not update from one to the other
   (uninstall first, back up before through Einstellungen > Datensicherung). Pick one source per
@@ -79,7 +84,7 @@ place, so it is the one used here. Both can be installed side by side.
   phone is unplugged: in PowerShell `$env:ANDROID_SERIAL = "emulator-5554"` (see the serial with
   `adb devices`), then `.\gradlew connectedDebugAndroidTest`; or pick the emulator in Android Studio.
   If the install fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, an app signed with another key is on
-  the emulator: uninstall it there (`adb -s emulator-5554 uninstall de.remph.urlaubsplaner`) and run
+  the emulator: uninstall it there (`adb -s emulator-5554 uninstall de.remph.urlaubsplaner.debug`) and run
   again. Gradle still ends in BUILD SUCCESSFUL in that case, so read the test report.
   What they cover and what not is in the "Instrumented tests" section of
   [plan.md](plan.md#instrumented-tests-092).

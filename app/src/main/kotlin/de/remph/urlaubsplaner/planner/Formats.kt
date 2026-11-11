@@ -9,6 +9,7 @@ import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHoliday
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -52,3 +53,7 @@ fun LocalDate.weekdayText(locale: Locale): String = dayOfWeek.shortText(locale)
 /** The short name Android gives German weekdays is "Mi." with a full stop; the app drops it. */
 fun DayOfWeek.shortText(locale: Locale): String =
     getDisplayName(TextStyle.SHORT, locale).trimEnd('.')
+
+/** "März 2027": the month's name on its own (German has "März", not "des März") and the year. */
+fun YearMonth.titleText(locale: Locale): String =
+    month.getDisplayName(TextStyle.FULL_STANDALONE, locale) + " " + year
