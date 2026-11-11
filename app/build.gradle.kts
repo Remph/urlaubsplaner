@@ -63,6 +63,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // A different application ID, so the debug build installs next to the release build
+            // (own data, own widgets, own file provider). The permanent ID stays the release one.
+            applicationIdSuffix = ".debug"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
             // R8 stays off for 0.9.0: Room, Glance, WorkManager and kotlinx-serialization reach

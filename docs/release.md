@@ -93,7 +93,7 @@ the language. Missing rules go into a new `app/proguard-rules.pro` (not there ye
 
 The standard check (`./gradlew lint test assembleDebug spotlessCheck`) is not enough for a release;
 the instrumented tests (`connectedDebugAndroidTest`, on both emulators, not the phone) and the widget cannot run in the cloud. Install the signed
-release APK on the phone (uninstall the debug build first, the keys differ) and walk through: first
+release APK on the phone (the debug build has its own application ID `de.remph.urlaubsplaner.debug`, so it can stay installed next to it) and walk through: first
 start, choose a Land, enter the entitlement, mark days, bridge days, widget (small and big),
 backup export and import, calendar export, German and English, dark mode.
 
