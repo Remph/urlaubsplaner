@@ -508,6 +508,38 @@ class CalendarScreenTest {
 
     @Test
     @Config(qualifiers = "de-w411dp-h900dp")
+    fun `a note under the expanded rows keeps the frame padding below it and the page fits`() {
+        runBlocking {
+            fixture.repository.saveEntitlement(
+                YearEntitlement(2026, VacationDays.of(30), VacationDays.of(0), MonthDay.of(3, 31)),
+            )
+        }
+        showYear()
+        compose.onNodeWithContentDescription("Vorheriges Jahr").performClick()
+        waitForText("2026")
+        expandRows()
+        compose.waitForIdle()
+
+        // 2026 has no school holidays in the test file: the note is the last thing on the page,
+        // so unlike the handle it must not sit against the bottom edge.
+        val note = compose.onNodeWithText("Schulferien", substring = true)
+        note.assertIsDisplayed()
+        val screen = compose.onRoot().getBoundsInRoot().height
+        val noteBottom = note.getBoundsInRoot().bottom
+        assertTrue("$noteBottom of $screen", noteBottom <= screen - 16.dp)
+        // The page fills the screen to within the whole-pixel slack of the rows and does not scroll.
+        val slack = with(compose.density) { 12.toDp() }
+        assertTrue("$noteBottom of $screen", noteBottom >= screen - 16.dp - slack - 8.dp)
+        val grid2026 =
+            compose
+                .onNode(hasContentDescription("Jahresübersicht 2026", substring = true))
+                .getBoundsInRoot()
+                .height
+        assertTrue("$grid2026", grid2026 > YearRowsCompact * 12)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
     fun `the legend is under the compact year, gone while the rows are expanded and back after`() {
         showYear()
         legendItems().assertCountEquals(1)
