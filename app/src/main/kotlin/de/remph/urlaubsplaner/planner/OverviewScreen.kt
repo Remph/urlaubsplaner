@@ -50,7 +50,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -109,18 +108,16 @@ fun OverviewScreen(
 fun ScreenFrame(
     outerPadding: PaddingValues,
     scrollState: ScrollState = rememberScrollState(),
-    modifier: Modifier = Modifier,
-    bottomPadding: Dp = 16.dp,
     content: @Composable () -> Unit,
 ) {
     Column(
         modifier =
-            modifier
+            Modifier
                 .fillMaxSize()
                 .padding(outerPadding)
                 .consumeWindowInsets(outerPadding)
                 .verticalScroll(scrollState)
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = bottomPadding),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         content()
