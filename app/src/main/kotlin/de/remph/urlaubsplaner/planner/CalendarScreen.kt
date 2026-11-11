@@ -120,11 +120,19 @@ fun CalendarScreen(
     var othersPx by rememberSaveable { mutableIntStateOf(-1) }
 
     BoxWithConstraints {
-        // What the page can fill without scrolling: the screen without the bars and the frame.
+        // What the page can fill without scrolling: the screen without the bars and the frame. The
+        // fit is only used while the year rows are expanded, and then the frame has no bottom
+        // padding (see below), so only its top counts.
         val visible =
             maxHeight - outerPadding.calculateTopPadding() -
-                outerPadding.calculateBottomPadding() - FramePadding * 2
-        ScreenFrame(outerPadding, scroll, Modifier.swipeToStep(swipe)) {
+                outerPadding.calculateBottomPadding() - FramePadding
+        // The expanded year ends in the handle, which has more than 20 dp of air under its bar,
+        // so the frame's usual 16 dp under the page would only be a second strip of nothing.
+        val bottomPadding by animateDpAsState(
+            if (page.mode == CalendarMode.YEAR && rowsExpanded) 0.dp else FramePadding,
+            label = "frameBottom",
+        )
+        ScreenFrame(outerPadding, scroll, Modifier.swipeToStep(swipe), bottomPadding) {
             if (!shown.hasLand) {
                 EmptyState(
                     stringResource(R.string.overview_no_land),
@@ -237,8 +245,10 @@ private fun CalendarBody(
             YearRowsMin
         } else {
             val others = with(density) { othersPx.toDp() } + above
-            // Whole dp, rounded down, so the page never ends a pixel too long and scrolls.
-            floor(expandedRowHeight(visible, others).value).dp
+            // Whole pixels, rounded down, so the page never ends a pixel too long and scrolls.
+            // (Whole dp would leave up to 12 dp of the screen unused: twelve rows.)
+            with(density) { floor(expandedRowHeight(visible, others).toPx()).toDp() }
+                .coerceAtLeast(YearRowsMin)
         }
     val rowHeight by animateDpAsState(
         if (rowsExpanded) expanded else YearRowsCompact,

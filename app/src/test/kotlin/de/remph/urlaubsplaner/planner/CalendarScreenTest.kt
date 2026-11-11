@@ -471,14 +471,16 @@ class CalendarScreenTest {
 
     /**
      * Where the page ends and where the screen does, to see whether the page scrolls. The handle
-     * is the last thing on the page while the rows are expanded (the legend is gone then).
+     * is the last thing on the page while the rows are expanded (the legend is gone then), and the
+     * frame has no padding under it then: the handle has air of its own. The rows are whole
+     * pixels, so what is left is less than one pixel for each of the twelve rows.
      */
     private fun assertPageFillsScreenWithoutScrolling() {
         val handleBottom = handle(expanded = true).getBoundsInRoot().bottom
         val screen = compose.onRoot().getBoundsInRoot().height
-        // 16 dp frame padding below the handle; the rows are whole dp, so up to 12 dp are left.
-        assertTrue("$handleBottom of $screen", handleBottom <= screen - 16.dp)
-        assertTrue("$handleBottom of $screen", handleBottom >= screen - 16.dp - 13.dp)
+        val slack = with(compose.density) { 12.toDp() }
+        assertTrue("$handleBottom of $screen", handleBottom <= screen)
+        assertTrue("$handleBottom of $screen", handleBottom >= screen - slack)
     }
 
     private fun legendItems() = compose.onAllNodesWithText("Geplant")
@@ -491,6 +493,16 @@ class CalendarScreenTest {
 
         assertExpanded()
         assertTrue(gridHeight() > YearRowsMin * 12 && gridHeight() < YearRowsMax * 12)
+        assertPageFillsScreenWithoutScrolling()
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h891dp-420dpi")
+    fun `the expanded rows leave less than a pixel per row on a phone with 2_6 pixels per dp`() {
+        showYear()
+        expandRows()
+
+        assertExpanded()
         assertPageFillsScreenWithoutScrolling()
     }
 
@@ -619,7 +631,7 @@ class CalendarScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "de-w360dp-h640dp")
+    @Config(qualifiers = "de-w360dp-h600dp")
     fun `on a small phone the rows stop at the minimum and the page scrolls`() {
         showYear()
         expandRows()
