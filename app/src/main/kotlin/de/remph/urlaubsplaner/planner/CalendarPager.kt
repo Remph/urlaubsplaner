@@ -102,7 +102,6 @@ internal fun PagerTitle(
     val mirrored = LocalLayoutDirection.current == LayoutDirection.Rtl
     val slide = with(LocalDensity.current) { TitleSlide.toPx() }
     val here = state.currentPage
-    val offset = state.currentPageOffsetFraction
     Box(
         Modifier.clearAndSetSemantics {
             heading()
@@ -112,17 +111,20 @@ internal fun PagerTitle(
         contentAlignment = Alignment.Center,
     ) {
         for (index in (here - 1)..(here + 1)) {
-            // How far this title is from the middle, in pages: 0 in view, 1 one page away.
-            val away = index - here - offset
-            if (index !in 0 until pages.count || abs(away) >= 1f) continue
+            if (index !in 0 until pages.count) continue
             Text(
                 pages.title(index, locale),
                 style = MaterialTheme.typography.titleLarge,
                 modifier =
                     Modifier.graphicsLayer {
+                        // Read here, while drawing: the offset changes every frame of a drag and
+                        // must not recompose the titles (it did, three texts per frame, and the
+                        // first swipe felt laggy). How far this title is from the middle, in
+                        // pages: 0 in view, 1 one page away.
+                        val away = index - here - state.currentPageOffsetFraction
                         translationX = away * slide * (if (mirrored) -1 else 1)
                         // One title at a time: the one leaving is gone at the middle and the one
-                        // coming only starts there, or the two letters run into each other.
+                        // coming only starts there, or the two run into each other.
                         alpha = (1f - 2 * abs(away)).coerceIn(0f, 1f)
                     },
             )
