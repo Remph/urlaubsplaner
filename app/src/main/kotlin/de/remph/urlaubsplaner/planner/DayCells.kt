@@ -24,13 +24,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
@@ -38,6 +44,12 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -104,51 +116,181 @@ internal fun WeekdayHeader(locale: Locale) {
 /** The fade of a day's tile when it is marked or unmarked: short, so the status stays first. */
 private val DayFade = tween<Color>(durationMillis = 150)
 
-/** One month as a grid of days, six rows at most. Days outside the month stay empty. */
+/**
+ * One month as a grid of days, six rows at most. Days outside the month stay empty. A long press
+ * on a day that costs vacation, then a drag, marks a run of days: while the finger is down the
+ * days from the first to the one under it look as in the "Bis" picker and a bubble says what the
+ * run costs; letting go calls [onRangeDrag] with the first and the last day that cost vacation.
+ */
 @Composable
 fun MonthGrid(
     view: YearView,
     month: YearMonth,
     highlight: LocalDate? = null,
     onHighlightDone: () -> Unit = {},
+    onRangeDrag: (first: LocalDate, last: LocalDate) -> Unit = { _, _ -> },
     onDayClick: (LocalDate) -> Unit,
 ) {
     val locale = currentLocale()
     val blanks = month.atDay(1).dayOfWeek.value - 1
     val cells = blanks + month.lengthOfMonth()
     val rows = (cells + 6) / 7
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        WeekdayHeader(locale)
-        for (row in 0 until rows) {
-            // The rings of the highlighted day reach into the rows around it, so its row is drawn last.
-            val highlightRow =
-                highlight != null && YearMonth.from(highlight) == month &&
-                    (highlight.dayOfMonth + blanks - 1) / 7 == row
-            Row(Modifier.fillMaxWidth().zIndex(if (highlightRow) 1f else 0f)) {
-                for (column in 0 until 7) {
-                    val day = row * 7 + column - blanks + 1
-                    if (day < 1 || day > month.lengthOfMonth()) {
-                        Box(Modifier.weight(1f).height(52.dp))
-                    } else {
-                        // Keyed by date: a cell that appears with a new month starts at its colours
-                        // instead of fading from the previous month's day at the same place.
-                        key(month.atDay(day)) {
-                            val date = month.atDay(day)
-                            DayCell(
-                                view,
-                                date,
-                                locale,
-                                onDayClick,
-                                Modifier.weight(1f),
-                                highlight = date == highlight,
-                                onHighlightDone = onHighlightDone,
-                            )
+    val drag = rememberMarkDrag(view, month, onRangeDrag)
+    Box {
+        Column(
+            modifier = drag.modifier,
+            verticalArrangement = Arrangement.spacedBy(GridGap),
+        ) {
+            Box(Modifier.onSizeChanged { drag.headerPx = it.height }) { WeekdayHeader(locale) }
+            for (row in 0 until rows) {
+                // The rings of the highlighted day reach into the rows around it, so its row is drawn last.
+                val highlightRow =
+                    highlight != null && YearMonth.from(highlight) == month &&
+                        (highlight.dayOfMonth + blanks - 1) / 7 == row
+                Row(Modifier.fillMaxWidth().zIndex(if (highlightRow) 1f else 0f)) {
+                    for (column in 0 until 7) {
+                        val day = row * 7 + column - blanks + 1
+                        if (day < 1 || day > month.lengthOfMonth()) {
+                            Box(Modifier.weight(1f).height(DayHeight))
+                        } else {
+                            // Keyed by date: a cell that appears with a new month starts at its colours
+                            // instead of fading from the previous month's day at the same place.
+                            key(month.atDay(day)) {
+                                val date = month.atDay(day)
+                                DayCell(
+                                    view,
+                                    date,
+                                    locale,
+                                    onDayClick,
+                                    Modifier.weight(1f),
+                                    highlight = date == highlight,
+                                    onHighlightDone = onHighlightDone,
+                                    range = drag.range,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+        // Beside the grid, not in its column: a child there would get a gap of its own.
+        drag.range?.let { DragBubble(view.dragCost(it), drag.finger) }
     }
+}
+
+private val DayHeight = 52.dp
+private val GridGap = 4.dp
+
+/**
+ * The drag to mark of one month grid: the range being dragged (null while none), the finger's
+ * place in the window for the bubble, and the [modifier] with the gesture for the grid's column.
+ * The grid is measured, not asked: the weekday names above the days are as high as the text
+ * makes them ([headerPx]), the days are [DayHeight] with a [GridGap] between the rows.
+ */
+@Stable
+internal class MarkDragState {
+    var range by mutableStateOf<DayRange?>(null)
+    val finger = mutableStateOf(Offset.Zero)
+    var headerPx by mutableIntStateOf(0)
+    lateinit var modifier: Modifier
+}
+
+@Composable
+private fun rememberMarkDrag(
+    view: YearView,
+    month: YearMonth,
+    onRangeDrag: (LocalDate, LocalDate) -> Unit,
+): MarkDragState {
+    val state = remember { MarkDragState() }
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+    val latestView by rememberUpdatedState(view)
+    val latestMonth by rememberUpdatedState(month)
+    val latestOnRange by rememberUpdatedState(onRangeDrag)
+    var grid by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    // The drag in progress; the state's range only mirrors it for drawing.
+    var current by remember { mutableStateOf<MarkDrag?>(null) }
+
+    fun targetAt(point: Offset): DragTarget {
+        val width = grid?.size?.width?.toFloat() ?: 1f
+        return dragTargetAt(
+            latestMonth,
+            point.x,
+            point.y,
+            width,
+            rowsTop = state.headerPx + with(density) { GridGap.toPx() },
+            rowPitch = with(density) { (DayHeight + GridGap).toPx() },
+        )
+    }
+
+    fun follow(point: Offset) {
+        grid?.let { if (it.isAttached) state.finger.value = it.localToWindow(point) }
+    }
+
+    fun stop() {
+        current = null
+        state.range = null
+    }
+    state.modifier =
+        Modifier
+            .onGloballyPositioned { grid = it }
+            .longPressDrag(
+                onLongPress = { point ->
+                    val target = targetAt(point)
+                    when {
+                        // A blank cell is no day: nothing to say.
+                        target.pastEdge -> {
+                            false
+                        }
+
+                        // A Saturday or a holiday costs nothing, so there is nothing to mark.
+                        !latestView.canMark(target.date) -> {
+                            haptic.performHapticFeedback(HapticFeedbackType.Reject)
+                            false
+                        }
+
+                        else -> {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            current = MarkDrag(target.date).also { state.range = it.range }
+                            follow(point)
+                            true
+                        }
+                    }
+                },
+                onDrag = { point ->
+                    current?.let { drag ->
+                        when (drag.moveTo(targetAt(point))) {
+                            DragFeedback.TICK -> {
+                                haptic.performHapticFeedback(
+                                    HapticFeedbackType.SegmentTick,
+                                )
+                            }
+
+                            DragFeedback.REJECT -> {
+                                haptic.performHapticFeedback(
+                                    HapticFeedbackType.Reject,
+                                )
+                            }
+
+                            DragFeedback.NONE -> {
+                                Unit
+                            }
+                        }
+                        state.range = drag.range
+                        follow(point)
+                    }
+                },
+                onEnd = { point ->
+                    current?.let { drag ->
+                        // The last move may not have reached the place where the finger lifted.
+                        drag.moveTo(targetAt(point))
+                        latestView.costlyBounds(drag.range)?.let { latestOnRange(it.start, it.end) }
+                    }
+                    stop()
+                },
+                onCancel = ::stop,
+            )
+    return state
 }
 
 @Composable
@@ -160,34 +302,40 @@ private fun DayCell(
     modifier: Modifier,
     highlight: Boolean,
     onHighlightDone: () -> Unit,
+    range: DayRange?,
 ) {
     val colors = dayColors()
+    val scheme = MaterialTheme.colorScheme
     val clock = rememberHighlightClock(highlight, onHighlightDone)
     val look = view.look(date)
+    // While a drag covers the day it looks as in the "Bis" picker, with the picker's own colours.
+    val role = range?.let { rangeRole(date, it.start, it.end) }?.takeIf { it.inRange }
     val description = dayDescription(view, date, look, locale)
     // The theme's large step, the same as the cards (design review, the maintainer, 2026-10-25).
     val shape = MaterialTheme.shapes.large
-    val planned = look.mark != null && !look.taken
+    val planned = look.mark != null && !look.taken && role == null
     // Every day is a tile of its own, so the days stand out from the background (the maintainer,
     // 2026-10-25). The tile's colour is the strongest thing the day is; a school holiday under a
     // taken day or a holiday still shows as a bar along the bottom (in the text colour on a taken
     // day, since the wallpaper's colour can be close to the school holiday tile).
-    val fillTarget =
+    val ownFill =
         when {
             look.taken -> colors.taken
             look.granted -> colors.granted
             look.holiday -> colors.holiday
             look.school -> colors.school
-            else -> MaterialTheme.colorScheme.surfaceContainerLow
+            else -> scheme.surfaceContainerLow
         }
-    val textTarget =
+    val ownText =
         when {
             look.taken -> colors.onTaken
             look.granted -> colors.onGranted
             look.holiday -> colors.onHoliday
             !look.workDay -> colors.weekend
-            else -> MaterialTheme.colorScheme.onSurface
+            else -> scheme.onSurface
         }
+    val fillTarget = if (role != null) rangeFill(role, look, colors, scheme, ownFill) else ownFill
+    val textTarget = if (role != null) rangeText(role, look, colors, scheme, ownText) else ownText
     // Marking or removing a day fades the tile instead of flipping it. Compose follows Android's
     // "Remove animations" setting, so with it on the colours change at once.
     val fill by animateColorAsState(fillTarget, DayFade, label = "dayFill")
@@ -205,7 +353,7 @@ private fun DayCell(
     Box(
         modifier =
             modifier
-                .height(52.dp)
+                .height(DayHeight)
                 .zIndex(if (highlight) 1f else 0f)
                 .highlightRings(clock, MaterialTheme.colorScheme.primary, shape, 2.dp)
                 .clickable(interactionSource = press, indication = null) { onClick(date) }
@@ -225,6 +373,14 @@ private fun DayCell(
                     .indication(press, ripple())
                     .then(
                         when {
+                            role != null && rangeRing(role, look) -> {
+                                Modifier.border(2.dp, scheme.primary, shape)
+                            }
+
+                            role != null -> {
+                                Modifier
+                            }
+
                             planned || outline.alpha > 0f -> {
                                 Modifier.border(BorderStroke(2.dp, outline), shape)
                             }
@@ -246,7 +402,19 @@ private fun DayCell(
                 fontWeight = if (look.today) FontWeight.Bold else FontWeight.Normal,
                 style = MaterialTheme.typography.bodyLarge,
             )
-            if (look.mark == DayMark.HALF) {
+            if (role != null) {
+                RangeTileDetails(
+                    look,
+                    edge = role.isEdge,
+                    schoolBar =
+                        look.school &&
+                            (
+                                role.isEdge || role == RangeRole.INSIDE || look.holiday ||
+                                    look.mark != null
+                            ),
+                )
+            }
+            if (role == null && look.mark == DayMark.HALF) {
                 Text(
                     text = "½",
                     color =
@@ -259,7 +427,7 @@ private fun DayCell(
                     modifier = Modifier.align(Alignment.TopEnd).padding(end = 5.dp, top = 2.dp),
                 )
             }
-            if (schoolBar) {
+            if (role == null && schoolBar) {
                 Box(
                     Modifier
                         .align(Alignment.BottomCenter)
@@ -271,7 +439,8 @@ private fun DayCell(
                         ),
                 )
             }
-            if (look.today) {
+            // The dot of a marked day in the range sits where the underline would.
+            if (look.today && !(role != null && look.mark != null)) {
                 Box(
                     Modifier
                         .align(Alignment.BottomCenter)

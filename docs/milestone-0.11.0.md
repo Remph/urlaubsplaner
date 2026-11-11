@@ -111,6 +111,23 @@ maintainer answered three cards the same evening and took the recommended option
     the picker (reuse the picker's tile colours instead of writing them twice); TalkBack users keep
     the sheet and the picker. Handover for T5: `handover/0-11-0-t5-drag-to-mark.md`.
 
+- **S2, as built (T5, session branch `claude/project-thread-ow2rfh`).** `planner/DragToMark.kt`
+  holds the gesture (`longPressDrag`), the maths (`dragTargetAt`, `MarkDrag`, `costlyBounds`) and
+  the bubble (`DragBubble`, a popup, so it can sit over the header); `MonthGrid` in `DayCells.kt`
+  uses them. The gesture works on the Initial pointer pass: before the long press time nothing is
+  touched (a swipe starts the pager, a tap is a click), after it every change is consumed on the
+  way down, so the pager and the scroll stay still and the day under the finger gets no click.
+  What was not decided by a card and was built as recommended: a long press on a day that costs
+  nothing (weekend, holiday) gives one `Reject` tick and swallows the rest of that touch (no sheet);
+  on a blank cell nothing happens; the first day gives the `LongPress` feedback, each new day
+  `SegmentTick`, the month's edge one `Reject`; the run is cut to its first and last day that
+  costs vacation before the sheet opens (`costlyBounds`), so the sheet opens on a day it can mark;
+  the bubble counts whole days (`dragCost`) and is shown from the first day ("1 Tag"); a touch
+  the system cancels opens nothing. The picker's colours are one function now
+  (`rangeFill`, `rangeText`, `rangeRing`, `RangeTileDetails` in `RangePicker.kt`), used by the
+  picker's cells and by the month cells under a drag. `DaySheet` got `initialEnd`. Year view: no
+  drag. No Room, backup or string change (the bubble reuses `days_one` and `days_other`).
+
 ## Order and threads
 
 ```
