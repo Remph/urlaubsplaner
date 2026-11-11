@@ -239,6 +239,12 @@
     <string name="mark_full">Whole day</string>
     <string name="mark_half">Half day</string>
     <string name="until">Until: %1$s</string>
+    <string name="range_title">Until when?</string>
+    <string name="range_from">From %1$s</string>
+    <string name="range_first_day">First day</string>
+    <string name="range_last_day">Last day</string>
+    <string name="range_inside">In the range</string>
+    <string name="range_free_note">Days off and public holidays are not counted.</string>
     <string name="mark_save">Add</string>
     <string name="mark_change">Change</string>
     <string name="mark_remove">Remove</string>

@@ -294,7 +294,7 @@ and PR C (Brückentage).
   school colours are fixed (not from the wallpaper), taken follows the theme. Under the month the
   holidays and school holidays are listed by name, and a month outside the school holiday
   file says "noch keine Schulferien".
-- Day sheet: whole or half day, "Bis" (a date picker, same year, range marks only days that cost
+- Day sheet: whole or half day, "Bis" (since 0.11.0 an own month grid in a dialog, same year, range marks only days that cost
   vacation, so the weekend inside stays free), cost and days left afterwards before anything is
   stored, "Eintragen" or "Ändern", "Entfernen". Weekends and holidays only show what they are.
   Option C (tap start day then end day) is not built; the maintainer tries the debug APK first.
@@ -309,7 +309,7 @@ and PR C (Brückentage).
   the big targets.
 - Tests: `:core` unit tests for the new rules; `:app` `YearViewTest`, `PlannerViewModelTest`
   (Robolectric, in-memory Room), `OverviewScreenTest` and `CalendarScreenTest` (German and
-  English, compose the real screens). Not covered: the date picker, TalkBack, real wallpaper
+  English, compose the real screens), `RangePickerTest` (the "Bis" dialog). Not covered: TalkBack, real wallpaper
   colours. Not built: Brückentage on the screens (PR C).
 
 ### Brückentage (M3, PR C)
