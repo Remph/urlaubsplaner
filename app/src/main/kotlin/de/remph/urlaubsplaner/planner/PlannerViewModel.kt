@@ -14,10 +14,12 @@ import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.UserDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -66,10 +68,32 @@ class PlannerViewModel(
     private val shownMonth = MutableStateFlow(YearMonth.from(today.value))
     private val shownMode = MutableStateFlow(CalendarMode.MONTH)
 
-    val overview: StateFlow<YearView?> = yearView(today.map { it.year }.distinctUntilChanged())
+    val overview: StateFlow<YearView?> =
+        today
+            .map { it.year }
+            .distinctUntilChanged()
+            .flatMapLatest { yearData(it) }
+            .map<YearView, YearView?> { it }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val calendar: StateFlow<YearView?> =
-        yearView(shownMonth.map { it.year }.distinctUntilChanged())
+    private val yearViews = HashMap<Int, StateFlow<YearView?>>()
+
+    /**
+     * The view of [year] for a calendar page. The pager draws the page next to the one in view
+     * while a finger drags, and that page may be in another year (December next to January), so
+     * every page reads the view of its own year instead of the one of the shown month. A year
+     * nobody reads for five seconds is dropped, with its last value: a page opened later must
+     * not draw marks from before.
+     */
+    fun calendarView(year: Int): StateFlow<YearView?> =
+        yearViews.getOrPut(year) {
+            yearData(year)
+                .map<YearView, YearView?> { it }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, 0), null)
+        }
+
+    /** The first and the last month the calendar can show (see [showMonth]). */
+    val calendarMonths: ClosedRange<YearMonth> get() = firstMonth..lastMonth
 
     /**
      * The quiet line about backups on the overview, null when there is nothing to remind of.
@@ -95,11 +119,15 @@ class PlannerViewModel(
     init {
         // Only a screen that collects the calendar starts reading its year, so the first visit to
         // the calendar tab drew nothing, then built the whole page in the middle of the tab slide.
-        // Once the overview has its data (so the start of the app is not slowed) the calendar's
-        // year is read too and kept; it follows the month the user steps to.
+        // Once the overview has its data (so the start of the app is not slowed) the years next
+        // to the page in view are read too and kept, so a page that a finger drags in is not blank.
         viewModelScope.launch {
             overview.first { it != null }
-            calendar.collect {}
+            combine(shownMonth, shownMode, ::yearsAround)
+                .distinctUntilChanged()
+                .collectLatest { years ->
+                    coroutineScope { years.forEach { launch { calendarView(it).collect {} } } }
+                }
         }
     }
 
@@ -238,39 +266,44 @@ class PlannerViewModel(
         viewModelScope.launch { repository.restore(days) }
     }
 
-    private fun yearView(years: Flow<Int>): StateFlow<YearView?> =
-        years
-            .flatMapLatest { year ->
-                combine(
-                    repository.observeSettings(),
-                    repository.observeEntitlement(year),
-                    repository.observeMarkedDays(
-                        LocalDate.of(year - 1, 12, 1).coerceAtLeast(LocalDate.of(firstYear, 1, 1)),
-                        LocalDate.of(year + 1, 12, 31),
-                    ),
-                    today,
-                ) { settings, entitlement, marked, now ->
-                    val check = settings.publicHolidayCheck()
-                    YearView(
-                        year = year,
-                        today = now,
-                        settings = settings,
-                        entitlement = entitlement,
-                        marks = marked.marks,
-                        granted = marked.granted,
-                        calculator =
-                            check?.let {
-                                VacationCalculator(
-                                    clock,
-                                    settings.schedule,
-                                    it,
-                                )
-                            },
-                        schoolData = schoolHolidays.value,
-                        bridgeFinder = check?.let { BridgeFinder(clock, settings.schedule, it) },
-                    )
-                }
-            }.flowOn(Dispatchers.Default)
-            .map<YearView, YearView?> { it }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    /**
+     * The years of the page in view and of the two next to it: the months next to a month, or the
+     * years next to a year.
+     */
+    private fun yearsAround(
+        month: YearMonth,
+        mode: CalendarMode,
+    ): Set<Int> {
+        val pages =
+            if (mode == CalendarMode.MONTH) {
+                listOf(month.minusMonths(1), month, month.plusMonths(1)).map { it.year }
+            } else {
+                listOf(month.year - 1, month.year, month.year + 1)
+            }
+        return pages.filter { it in firstYear..lastYear }.toSet()
+    }
+
+    private fun yearData(year: Int): Flow<YearView> =
+        combine(
+            repository.observeSettings(),
+            repository.observeEntitlement(year),
+            repository.observeMarkedDays(
+                LocalDate.of(year - 1, 12, 1).coerceAtLeast(LocalDate.of(firstYear, 1, 1)),
+                LocalDate.of(year + 1, 12, 31),
+            ),
+            today,
+        ) { settings, entitlement, marked, now ->
+            val check = settings.publicHolidayCheck()
+            YearView(
+                year = year,
+                today = now,
+                settings = settings,
+                entitlement = entitlement,
+                marks = marked.marks,
+                granted = marked.granted,
+                calculator = check?.let { VacationCalculator(clock, settings.schedule, it) },
+                schoolData = schoolHolidays.value,
+                bridgeFinder = check?.let { BridgeFinder(clock, settings.schedule, it) },
+            )
+        }.flowOn(Dispatchers.Default)
 }

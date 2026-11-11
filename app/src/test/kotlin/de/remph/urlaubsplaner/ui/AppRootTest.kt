@@ -464,7 +464,7 @@ class AppRootTest {
         compose.waitUntil(5_000) { fixture.date("2027-03-15") in marked().marks }
         // Let the screens read the restored day before the database closes after the test.
         compose.waitUntil(5_000) {
-            planner.calendar.value?.markOn(fixture.date("2027-03-15")) !=
+            planner.calendarView(2027).value?.markOn(fixture.date("2027-03-15")) !=
                 null
         }
         waitUntilGone("1 Tag entfernt")
