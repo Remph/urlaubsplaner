@@ -101,6 +101,8 @@ fun CalendarScreen(
     val rowsExpanded by viewModel.calendarYearRowsExpanded.collectAsStateWithLifecycle()
     val highlight by viewModel.highlight.collectAsStateWithLifecycle()
     var sheetDate by rememberSaveable { mutableStateOf<LocalDate?>(null) }
+    // The last day of the run when the sheet was opened by dragging across days; the day itself otherwise.
+    var sheetEnd by rememberSaveable { mutableStateOf<LocalDate?>(null) }
     // A highlight is for the moment the calendar opens: it goes when another month is shown and
     // when the screen leaves, so a later visit does not light up an old day.
     LaunchedEffect(highlight, month) {
@@ -189,7 +191,14 @@ fun CalendarScreen(
                     savedOthersPx = othersPx,
                     // Only the page that stays reports: the one dragged in has another year's size.
                     onOthersPx = { if (index == pager.settledPage) othersPx = it },
-                    onDay = { sheetDate = it },
+                    onDay = {
+                        sheetDate = it
+                        sheetEnd = it
+                    },
+                    onRange = { first, last ->
+                        sheetDate = first
+                        sheetEnd = last
+                    },
                 )
             }
         }
@@ -198,7 +207,15 @@ fun CalendarScreen(
     val date = sheetDate
     if (date != null) {
         val dateView by viewModel.calendarView(date.year).collectAsStateWithLifecycle()
-        dateView?.let { DaySheet(it, date, viewModel, onDismiss = { sheetDate = null }) }
+        dateView?.let {
+            DaySheet(
+                it,
+                date,
+                viewModel,
+                onDismiss = { sheetDate = null },
+                initialEnd = sheetEnd ?: date,
+            )
+        }
     }
 }
 
@@ -272,6 +289,7 @@ private fun CalendarPage(
     savedOthersPx: Int,
     onOthersPx: (Int) -> Unit,
     onDay: (LocalDate) -> Unit,
+    onRange: (LocalDate, LocalDate) -> Unit,
 ) {
     // Nothing until the year has been read: a page never draws another year's view.
     val view by viewModel.calendarView(pages.yearAt(index)).collectAsStateWithLifecycle()
@@ -313,6 +331,7 @@ private fun CalendarPage(
             savedOthersPx,
             onOthersPx,
             onDay,
+            onRange,
         )
     }
 }
@@ -333,6 +352,7 @@ private fun CalendarBody(
     savedOthersPx: Int,
     onOthersPx: (Int) -> Unit,
     onDay: (LocalDate) -> Unit,
+    onRange: (LocalDate, LocalDate) -> Unit,
 ) {
     val density = LocalDensity.current
     // The expanded rows are what is left of the screen once the rest of the page has its height.
@@ -373,7 +393,13 @@ private fun CalendarBody(
         verticalArrangement = Arrangement.spacedBy(FrameSpacing),
     ) {
         if (mode == CalendarMode.MONTH) {
-            MonthGrid(shown, month, highlight, viewModel::highlightDone) { onDay(it) }
+            MonthGrid(
+                shown,
+                month,
+                highlight,
+                viewModel::highlightDone,
+                onRangeDrag = onRange,
+            ) { onDay(it) }
             MonthCard(shown, month, locale)
             Legend(
                 showBridge = shown.bridgeDays.any { YearMonth.from(it) == month },
