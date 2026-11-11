@@ -56,6 +56,7 @@ class BridgesScreenTest {
                     fixture.viewModel(),
                     PaddingValues(),
                     onOpenSettings = {},
+                    onOpenBackup = {},
                     onOpenMonth = {},
                     onShowDate = {},
                 )

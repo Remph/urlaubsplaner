@@ -51,7 +51,8 @@ What the code and the answers say about each:
   file, so no migration and no backup format change. It is set when "Sicherung speichern" succeeds.
   A restore does not count. Logic with an injected clock and unit tests: hint when the last backup
   is more than 90 days old, or when there has never been one and marked days exist (design question:
-  how soon after the first marks; recommended 14 days). The hint is one line on the Übersicht with
+  how soon after the first marks; the maintainer chose 14 days on 2026-11-10; he also chose the very bottom of
+  the Übersicht and the wording "Letzte Sicherung vor 4 Monaten", see `docs/plan.md`). The hint is one line on the Übersicht with
   a tap to the backup page, and no notification (no new permission). Design questions first (mock-up):
   where the line sits on the Übersicht and its wording in German and English, for example "Letzte
   Sicherung vor 4 Monaten" / "Last backup 4 months ago". The backup page shows "Zuletzt gesichert:

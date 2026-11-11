@@ -17,6 +17,7 @@ import de.remph.urlaubsplaner.core.holidays.RegionalExtra
 import de.remph.urlaubsplaner.core.holidays.RegionalOptOut
 import de.remph.urlaubsplaner.core.settings.UserSettings
 import de.remph.urlaubsplaner.data.BackupFileStore
+import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.CalendarFileStore
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
 import de.remph.urlaubsplaner.data.UserDataRepository
@@ -53,6 +54,7 @@ class SettingsViewModelTest {
     private lateinit var database: UrlaubsplanerDatabase
     private lateinit var repository: UserDataRepository
     private lateinit var file: File
+    private lateinit var backupStatus: BackupStatusStore
 
     // 15 January 2027: the current year is 2027, so 2026 is the year before.
     private val clock = Clock.fixed(Instant.parse("2027-01-15T10:00:00Z"), ZoneOffset.UTC)
@@ -69,6 +71,7 @@ class SettingsViewModelTest {
         database = Room.inMemoryDatabaseBuilder(context, UrlaubsplanerDatabase::class.java).build()
         repository = UserDataRepository(database)
         file = File.createTempFile("backup", ".json")
+        backupStatus = BackupStatusStore(context.getSharedPreferences("backup-status-test", 0))
     }
 
     @After
@@ -87,6 +90,7 @@ class SettingsViewModelTest {
                 BackupFileStore(context.contentResolver),
                 CalendarExporter(repository, CalendarFileStore(context), clock),
                 clock,
+                backupStatus,
             )
         // The store clears it after the test, which cancels its viewModelScope.
         viewModels.put("settings-${created++}", viewModel)
@@ -494,6 +498,38 @@ class SettingsViewModelTest {
 
         vm.await { it.notice == Notice.Exported }
         assertEquals(someData, BackupFile.decode(file.readText()))
+    }
+
+    @Test
+    fun `a saved backup is remembered with today's date, a failed one is not`() {
+        runBlocking { repository.replaceAll(someData) }
+        val vm = viewModel()
+        assertNull(vm.await().lastBackup)
+
+        vm.export(Uri.fromFile(File(file.parentFile, "no-such-folder/backup.json")))
+        vm.await { it.notice == Notice.ExportFailed }
+        assertNull(backupStatus.state.value.lastBackup)
+
+        vm.dismissNotice()
+        vm.export(uri)
+
+        assertEquals(LocalDate.of(2027, 1, 15), vm.await { it.lastBackup != null }.lastBackup)
+        assertEquals(LocalDate.of(2027, 1, 15), backupStatus.state.value.lastBackup)
+    }
+
+    @Test
+    fun `restoring a backup does not count as a backup`() {
+        runBlocking { repository.replaceAll(someData) }
+        writeBackupFile(someData)
+        val vm = viewModel()
+
+        vm.import(uri)
+        vm.await { it.pendingImport != null }
+        vm.confirmImport()
+        vm.await { it.notice == Notice.Imported }
+
+        assertNull(vm.await().lastBackup)
+        assertNull(backupStatus.state.value.lastBackup)
     }
 
     @Test

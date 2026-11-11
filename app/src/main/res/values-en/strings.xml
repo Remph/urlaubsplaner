@@ -89,6 +89,15 @@
         <item quantity="one">%d year with an entitlement</item>
         <item quantity="other">%d years with an entitlement</item>
     </plurals>
+    <string name="backup_last">Last saved: %1$s</string>
+    <string name="backup_never">No backup yet</string>
+    <!-- The quiet line on the overview -->
+    <plurals name="backup_hint_old">
+        <item quantity="one">Last backup %d month ago</item>
+        <item quantity="other">Last backup %d months ago</item>
+    </plurals>
+    <string name="backup_hint_never">No backup saved yet</string>
+    <string name="backup_hint_open">Open backup</string>
     <string name="notice_saved">Saved.</string>
     <string name="notice_exported">Backup saved.</string>
     <string name="notice_imported">Backup restored.</string>
