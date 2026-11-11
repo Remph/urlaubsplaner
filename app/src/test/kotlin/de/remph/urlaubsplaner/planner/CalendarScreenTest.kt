@@ -510,14 +510,16 @@ class CalendarScreenTest {
 
     /**
      * Where the page ends and where the screen does, to see whether the page scrolls. The handle
-     * is the last thing on the page while the rows are expanded (the legend is gone then).
+     * is the last thing on the page while the rows are expanded (the legend is gone then), and the
+     * frame has no padding under it then: the handle has air of its own. The rows are whole
+     * pixels, so what is left is less than one pixel for each of the twelve rows.
      */
     private fun assertPageFillsScreenWithoutScrolling() {
         val handleBottom = handle(expanded = true).getBoundsInRoot().bottom
         val screen = compose.onRoot().getBoundsInRoot().height
-        // 16 dp frame padding below the handle; the rows are whole dp, so up to 12 dp are left.
-        assertTrue("$handleBottom of $screen", handleBottom <= screen - 16.dp)
-        assertTrue("$handleBottom of $screen", handleBottom >= screen - 16.dp - 13.dp)
+        val slack = with(compose.density) { 12.toDp() }
+        assertTrue("$handleBottom of $screen", handleBottom <= screen)
+        assertTrue("$handleBottom of $screen", handleBottom >= screen - slack)
     }
 
     private fun legendItems() = compose.onAllNodesWithText("Geplant")
@@ -531,6 +533,48 @@ class CalendarScreenTest {
         assertExpanded()
         assertTrue(gridHeight() > YearRowsMin * 12 && gridHeight() < YearRowsMax * 12)
         assertPageFillsScreenWithoutScrolling()
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h891dp-420dpi")
+    fun `the expanded rows leave less than a pixel per row on a phone with 2_6 pixels per dp`() {
+        showYear()
+        expandRows()
+
+        assertExpanded()
+        assertPageFillsScreenWithoutScrolling()
+    }
+
+    @Test
+    @Config(qualifiers = "de-w411dp-h900dp")
+    fun `a note under the expanded rows keeps the frame padding below it and the page fits`() {
+        runBlocking {
+            fixture.repository.saveEntitlement(
+                YearEntitlement(2026, VacationDays.of(30), VacationDays.of(0), MonthDay.of(3, 31)),
+            )
+        }
+        showYear()
+        compose.onNodeWithContentDescription("Vorheriges Jahr").performClick()
+        waitForText("2026")
+        expandRows()
+        compose.waitForIdle()
+
+        // 2026 has no school holidays in the test file: the note is the last thing on the page,
+        // so unlike the handle it must not sit against the bottom edge.
+        val note = compose.onNodeWithText("Schulferien", substring = true)
+        note.assertIsDisplayed()
+        val screen = compose.onRoot().getBoundsInRoot().height
+        val noteBottom = note.getBoundsInRoot().bottom
+        assertTrue("$noteBottom of $screen", noteBottom <= screen - 16.dp)
+        // The page fills the screen to within the whole-pixel slack of the rows and does not scroll.
+        val slack = with(compose.density) { 12.toDp() }
+        assertTrue("$noteBottom of $screen", noteBottom >= screen - 16.dp - slack - 8.dp)
+        val grid2026 =
+            compose
+                .onNode(hasContentDescription("Jahresübersicht 2026", substring = true))
+                .getBoundsInRoot()
+                .height
+        assertTrue("$grid2026", grid2026 > YearRowsCompact * 12)
     }
 
     @Test
@@ -658,7 +702,7 @@ class CalendarScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "de-w360dp-h640dp")
+    @Config(qualifiers = "de-w360dp-h600dp")
     fun `on a small phone the rows stop at the minimum and the page scrolls`() {
         showYear()
         expandRows()

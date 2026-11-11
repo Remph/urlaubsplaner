@@ -129,10 +129,12 @@ fun CalendarScreen(
         return
     }
     BoxWithConstraints {
-        // What a page can fill without scrolling: the screen without the bars and the frame.
+        // What a page can fill without scrolling: the screen without the bars and the frame's
+        // top padding. Each page takes off the bottom padding that its own end needs (see
+        // [endsInHandle]): a page dragged in can be of another year than the one at rest.
         val visible =
             maxHeight - outerPadding.calculateTopPadding() -
-                outerPadding.calculateBottomPadding() - FramePadding * 2
+                outerPadding.calculateBottomPadding() - FramePadding
         // The header stays where it is and the pager takes the rest of the screen. Each page
         // scrolls on its own: a scrollable page inside a scrollable screen would make the pager
         // the nearest scrollable of everything on the page, and TalkBack, reaching for an item
@@ -204,6 +206,14 @@ private val FramePadding = 16.dp
 private val FrameSpacing = 16.dp
 
 /**
+ * Whether the handle is the last thing on the year page. Under it can come the note about
+ * unknown school holidays and the hint about the missing vacation days: those are text and need
+ * the frame's padding below them, or they sit against the navigation bar.
+ */
+private fun YearView.endsInHandle(): Boolean =
+    entitlement != null && schoolHolidaysKnown(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31))
+
+/**
  * Keeps the pager and the ViewModel's month together. The ViewModel is the truth that survives
  * a tab change and a rotation: when its month changes (the arrows, "today") the pager scrolls
  * there, and when a swipe has settled on another page the ViewModel gets that page's month, with
@@ -267,11 +277,26 @@ private fun CalendarPage(
     val view by viewModel.calendarView(pages.yearAt(index)).collectAsStateWithLifecycle()
     val shown = view ?: return
     val scroll = rememberScrollState()
+    // The expanded year ends in the handle, which has more than 20 dp of air under its bar, so
+    // the usual 16 dp under the page would only be a second strip of nothing.
+    val bottomPadding by animateDpAsState(
+        if (pages.mode == CalendarMode.YEAR && rowsExpanded && shown.endsInHandle()) {
+            0.dp
+        } else {
+            FramePadding
+        },
+        label = "pageBottom",
+    )
     Column(
         Modifier
             .fillMaxSize()
             .verticalScroll(scroll)
-            .padding(horizontal = FramePadding, vertical = FramePadding),
+            .padding(
+                start = FramePadding,
+                top = FramePadding,
+                end = FramePadding,
+                bottom = bottomPadding,
+            ),
     ) {
         CalendarBody(
             shown,
@@ -330,8 +355,12 @@ private fun CalendarBody(
             YearRowsMin
         } else {
             val others = with(density) { othersPx.toDp() } + above
-            // Whole dp, rounded down, so the page never ends a pixel too long and scrolls.
-            floor(expandedRowHeight(visible, others).value).dp
+            // The frame's bottom padding is only left out when the handle ends the page.
+            val available = if (shown.endsInHandle()) visible else visible - FramePadding
+            // Whole pixels, rounded down, so the page never ends a pixel too long and scrolls.
+            // (Whole dp would leave up to 12 dp of the screen unused: twelve rows.)
+            with(density) { floor(expandedRowHeight(available, others).toPx()).toDp() }
+                .coerceAtLeast(YearRowsMin)
         }
     val rowHeight by animateDpAsState(
         if (rowsExpanded) expanded else YearRowsCompact,
