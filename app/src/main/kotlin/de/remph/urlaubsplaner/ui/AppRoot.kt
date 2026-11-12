@@ -88,6 +88,9 @@ fun AppRoot(
     var settingsGeneration by rememberSaveable { mutableIntStateOf(0) }
     // The page a fresh settings screen opens on: the list, or the backup page from the overview's hint.
     var settingsStart by rememberSaveable { mutableStateOf(SettingsPage.LIST) }
+    // Counts the taps on the Einstellungen tab while it is already open; the settings go back to
+    // their list for each one.
+    var settingsHomeTaps by rememberSaveable { mutableIntStateOf(0) }
     val show = { target: Tab ->
         if (target == Tab.SETTINGS && tab != Tab.SETTINGS) {
             settingsStart = SettingsPage.LIST
@@ -115,13 +118,14 @@ fun AppRoot(
                     )
                 for (entry in Tab.entries) {
                     val label = stringResource(entry.label)
-                    // A second tap on the open Kalender tab goes back to today; the other tabs
-                    // do nothing then.
+                    // A second tap on the open Kalender tab goes back to today, on the open
+                    // Einstellungen tab to the settings list; Übersicht does nothing then.
                     val backToToday = tab == Tab.CALENDAR && entry == Tab.CALENDAR
                     NavigationBarItem(
                         selected = tab == entry,
                         onClick = {
                             if (backToToday) plannerViewModel.showToday()
+                            if (tab == Tab.SETTINGS && entry == Tab.SETTINGS) settingsHomeTaps++
                             tab = entry
                         },
                         // TalkBack says what the tap will do instead of a plain "activate".
@@ -192,6 +196,7 @@ fun AppRoot(
                             showMessage,
                             padding,
                             settingsStart,
+                            settingsHomeTaps,
                         )
                     }
                 }
