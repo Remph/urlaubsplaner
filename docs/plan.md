@@ -402,8 +402,10 @@ clickable mock-up are in the project folder `design/review-m3/` and `design/revi
   no stray gap is left at the end.
 - A second tap on the open Kalender tab goes back to today (0.11.0, parked 27): the month view to
   the current month, the year view to the current year, the mode stays (`PlannerViewModel.showToday`).
-  TalkBack hears "Zum aktuellen Monat" / "Zum aktuellen Jahr" as the tab's click label. The other
-  tabs do nothing on a second tap.
+  TalkBack hears "Zum aktuellen Monat" / "Zum aktuellen Jahr" as the tab's click label. A second
+  tap on the open Einstellungen tab with a settings page open goes back to the settings list, like
+  the back button (0.11.1: `AppRoot` counts the taps, `SettingsHost` calls `leave()`); on the list
+  itself and on Übersicht it does nothing.
 - Portrait on phones (0.11.0, parked 25): `OrientationPolicy` sets `requestedOrientation` to portrait
   when the smallest width is under 600 dp and leaves it free from 600 dp (tablets). It runs as a
   lifecycle callback (`onActivityPreCreated`, before the activity's `onCreate`) for every

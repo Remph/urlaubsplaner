@@ -336,6 +336,25 @@ class AppRootTest {
 
     @Test
     @Config(qualifiers = "de")
+    fun `an earlier tap on the settings tab does not close a page after a tab change`() {
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Datensicherung")
+        compose.onNodeWithText("Datensicherung").performClick()
+        waitForText("Sicherung wiederherstellen")
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Bundesland wählen")
+
+        compose.onNodeWithText("Datensicherung").performClick()
+        waitForText("Sicherung wiederherstellen")
+        compose.onNode(tab("Übersicht")).performClick()
+        compose.onNode(tab("Einstellungen")).performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Sicherung wiederherstellen").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
     fun `the button on the overview opens the settings list, not the page left open`() {
         compose.onNode(tab("Einstellungen")).performClick()
         waitForText("Datensicherung")
