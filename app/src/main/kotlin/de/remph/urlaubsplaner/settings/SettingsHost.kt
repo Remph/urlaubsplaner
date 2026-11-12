@@ -13,6 +13,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -47,6 +48,7 @@ fun SettingsHost(
     showMessage: (String) -> Unit,
     outerPadding: PaddingValues,
     startPage: SettingsPage = SettingsPage.LIST,
+    homeTaps: Int = 0,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val ui = state ?: return
@@ -59,6 +61,16 @@ fun SettingsHost(
         page = SettingsPage.LIST
     }
     BackHandler(enabled = page != SettingsPage.LIST, onBack = leave)
+
+    // A tap on the open Einstellungen tab goes back to the list, like the back button. The count
+    // is remembered so a rotation does not replay an old tap.
+    var handledTaps by rememberSaveable { mutableIntStateOf(homeTaps) }
+    LaunchedEffect(homeTaps) {
+        if (homeTaps != handledTaps) {
+            handledTaps = homeTaps
+            if (page != SettingsPage.LIST) leave()
+        }
+    }
 
     val notice = ui.notice
     val noticeText = notice?.let { noticeText(it) }

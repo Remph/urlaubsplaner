@@ -302,6 +302,59 @@ class AppRootTest {
 
     @Test
     @Config(qualifiers = "de")
+    fun `a second tap on the open settings tab goes back to the list`() {
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Datensicherung")
+        compose.onNodeWithText("Datensicherung").performClick()
+        waitForText("Sicherung wiederherstellen")
+
+        compose.onNode(tab("Einstellungen")).performClick()
+
+        waitForText("Bundesland wählen")
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("Sicherung wiederherstellen").fetchSemanticsNodes().isEmpty()
+        }
+        compose.onNode(tab("Einstellungen")).assertIsSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a second tap on the settings list changes nothing`() {
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Datensicherung")
+
+        compose.onNode(tab("Einstellungen")).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Datensicherung").assertIsDisplayed()
+
+        // Opening a page afterwards must not be undone by the earlier tap.
+        compose.onNodeWithText("Datensicherung").performClick()
+        waitForText("Sicherung wiederherstellen")
+        compose.waitForIdle()
+        compose.onNodeWithText("Sicherung wiederherstellen").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `an earlier tap on the settings tab does not close a page after a tab change`() {
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Datensicherung")
+        compose.onNodeWithText("Datensicherung").performClick()
+        waitForText("Sicherung wiederherstellen")
+        compose.onNode(tab("Einstellungen")).performClick()
+        waitForText("Bundesland wählen")
+
+        compose.onNodeWithText("Datensicherung").performClick()
+        waitForText("Sicherung wiederherstellen")
+        compose.onNode(tab("Übersicht")).performClick()
+        compose.onNode(tab("Einstellungen")).performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Sicherung wiederherstellen").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
     fun `the button on the overview opens the settings list, not the page left open`() {
         compose.onNode(tab("Einstellungen")).performClick()
         waitForText("Datensicherung")
