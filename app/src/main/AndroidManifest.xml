@@ -48,9 +48,10 @@
              small one keeps the receiver name of the one widget that came before.
              Not exported (parked item 11, 2026-11-13): every action here is sent by the system
              (the app widget service and the protected date, time and locale broadcasts), and
-             such a receiver still gets them. Android's Glance guide declares its receiver the same
-             way. To be confirmed on a phone: the widget is listed in the launcher, can be placed
-             and still follows the date. -->
+             such a receiver still gets them. Android's docs disagree with each other (the Glance
+             guide shows both values); Google's own AppWidget sample (android/user-interface-samples,
+             read 2026-11-13) uses false for all its widget receivers. To be confirmed on a phone:
+             the widget is listed in the launcher, can be placed and still follows the date. -->
         <receiver
             android:name=".widget.UrlaubsplanerWidgetReceiver"
             android:exported="false"
