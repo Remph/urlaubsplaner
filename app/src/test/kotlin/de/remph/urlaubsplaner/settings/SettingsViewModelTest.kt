@@ -83,6 +83,8 @@ class SettingsViewModelTest {
 
     private var created = 0
 
+    private var replaced = 0
+
     private fun viewModel(): SettingsViewModel {
         val viewModel =
             SettingsViewModel(
@@ -91,6 +93,7 @@ class SettingsViewModelTest {
                 CalendarExporter(repository, CalendarFileStore(context), clock),
                 clock,
                 backupStatus,
+                onDataReplaced = { replaced++ },
             )
         // The store clears it after the test, which cancels its viewModelScope.
         viewModels.put("settings-${created++}", viewModel)
@@ -551,6 +554,8 @@ class SettingsViewModelTest {
         val state = vm.await { it.notice == Notice.Imported }
         assertNull(state.pendingImport)
         assertEquals(someData, runBlocking { repository.readAll() })
+        // The widgets are drawn again after the data was replaced (parked item 7).
+        assertEquals(1, replaced)
     }
 
     @Test
@@ -570,11 +575,13 @@ class SettingsViewModelTest {
         assertEquals(existing.summary(), plan?.current)
         assertEquals(someData.summary(), plan?.file)
         assertEquals(existing, runBlocking { repository.readAll() })
+        assertEquals(0, replaced)
 
         vm.confirmImport()
         val state = vm.await { it.notice == Notice.Imported }
         assertNull(state.pendingImport)
         assertEquals(someData, runBlocking { repository.readAll() })
+        assertEquals(1, replaced)
     }
 
     @Test
@@ -589,6 +596,7 @@ class SettingsViewModelTest {
 
         assertNull(vm.await { it.pendingImport == null }.pendingImport)
         assertEquals(someData.copy(marks = emptyMap()), runBlocking { repository.readAll() })
+        assertEquals(0, replaced)
     }
 
     @Test

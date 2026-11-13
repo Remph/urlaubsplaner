@@ -371,6 +371,14 @@ folder); the logic is `:core.widget.WidgetStatus` (unit-tested), the rest is `:a
   Glance keeps a session for about a minute and then only refreshes the widget's state, not its data, so each redraw also raises `WidgetRefresher.revision` and `liveModel` reads the data again (found in the review).
   The date changes through `DATE_CHANGED`, `TIME_SET`, `TIMEZONE_CHANGED` in the receiver and
   `updatePeriodMillis` 30 minutes as the safety net.
+  Since 0.11.1 (parked item 7) `redraw` takes the placed widget ids from `AppWidgetManager` and
+  updates each by `getGlanceIdBy`, not through `updateAll`: Glance's own receiver list is lost with
+  "Clear data". A widget that fails is logged and skipped, so the watch cannot die. A restored
+  backup also calls `refresh()`, which starts the watch if the app start did not. The cause of
+  "stale after Clear data plus restore" was not seen on a device; these remove the candidates.
+- Exported: the two widget receivers are `exported="false"` since 0.11.1 (parked item 11; all their
+  actions come from the system). `WidgetConfigActivity` stays `exported="true"`: the launcher
+  starts it, and if that failed the widget could not be placed.
 - Not tried on a launcher (the cloud has none): placing, the setup screen, transparency, light and
   dark, the language switch, the tap targets, the redraw after marking a day, whether Android
   delivers the date broadcasts, how the small layout fits a 2x1 cell on a real phone. The picker preview

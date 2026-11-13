@@ -29,7 +29,10 @@
             </intent-filter>
         </activity>
 
-        <!-- Setup screen of the home screen widget; Android starts it, so it has this one filter. -->
+        <!-- Setup screen of the home screen widget; Android starts it, so it has this one filter.
+             Stays exported on purpose (parked item 11, 2026-11-13): the launcher starts it, and a
+             launcher that cannot would drop the widget it is placing. The screen ends at once
+             without a valid widget id and only changes the style of that one widget. -->
         <activity
             android:name=".widget.WidgetConfigActivity"
             android:exported="true"
@@ -42,10 +45,15 @@
         <!-- The two home screen widgets, small (2x1) and big (4x2). The date and time broadcasts
              redraw them when the day changes; whether Android delivers them to a manifest receiver
              is not verified on a phone, so the provider's update period is the safety net. The
-             small one keeps the receiver name of the one widget that came before. -->
+             small one keeps the receiver name of the one widget that came before.
+             Not exported (parked item 11, 2026-11-13): every action here is sent by the system
+             (the app widget service and the protected date, time and locale broadcasts), and
+             such a receiver still gets them. Android's Glance guide declares its receiver the same
+             way. To be confirmed on a phone: the widget is listed in the launcher, can be placed
+             and still follows the date. -->
         <receiver
             android:name=".widget.UrlaubsplanerWidgetReceiver"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/widget_label_small">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -60,7 +68,7 @@
         </receiver>
         <receiver
             android:name=".widget.UrlaubsplanerBigWidgetReceiver"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/widget_label_big">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

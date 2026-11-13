@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
                                 app.calendarExporter,
                                 app.clock,
                                 app.backupStatusStore,
+                                onDataReplaced = { app.widgetRefresher.refresh() },
                             )
                         },
                     plannerViewModel =

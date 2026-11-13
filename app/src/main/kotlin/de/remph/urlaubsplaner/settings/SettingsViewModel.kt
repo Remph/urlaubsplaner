@@ -55,6 +55,8 @@ class SettingsViewModel(
     private val calendar: CalendarExporter,
     private val clock: Clock,
     private val backupStatus: BackupStatusStore,
+    /** Called after a backup replaced all data, so the home screen widgets are drawn again. */
+    private val onDataReplaced: () -> Unit = {},
 ) : ViewModel() {
     /** The year the page starts on, and the one the settings list shows. */
     val currentYear = LocalDate.now(clock).year
@@ -402,6 +404,7 @@ class SettingsViewModel(
             val current = repository.readAll()
             if (current.isEmpty) {
                 repository.replaceAll(data)
+                onDataReplaced()
                 notice.value = Notice.Imported
             } else {
                 pendingImport.value = ImportPlan(current.summary(), data.summary(), data)
@@ -414,6 +417,7 @@ class SettingsViewModel(
         pendingImport.value = null
         viewModelScope.launch {
             repository.replaceAll(plan.data)
+            onDataReplaced()
             edits.value = Edits(selectedYear.value)
             notice.value = Notice.Imported
         }
