@@ -1,0 +1,1 @@
+Behoben: Die Widgets zeichnen sich zuverlässig neu, auch nach dem Wiederherstellen einer Sicherung, und ein defektes Widget hält die anderen nicht mehr auf. Ein zweiter Tipp auf „Einstellungen“ führt zurück zur Einstellungsliste. Die Widgets sind nur noch für das System erreichbar, nicht mehr für andere Apps.
