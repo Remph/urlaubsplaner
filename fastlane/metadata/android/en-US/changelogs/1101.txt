@@ -1,0 +1,1 @@
+Fixed: The widgets redraw reliably, also after restoring a backup, and one failing widget no longer stops the others. A second tap on "Settings" goes back to the settings list. The widgets can now only be reached by the system, no longer by other apps.
