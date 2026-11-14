@@ -85,6 +85,12 @@ the maintainer (Project settings > Cloud environment > Network access) instead o
 - openholidaysapi.org and similar sites are blocked unless the maintainer adds them to the trusted sites.
 
 ## Git
+- Never push to `main` or any deploy branch (`main` and the `release/<version>` integration
+  branches, today `release/0.10.0` and `release/0.11.0`). Never force-push. Work goes to a feature
+  branch and a PR that the maintainer merges.
+- Why it is written down: project cloud threads do not apply the allow/deny rules or hooks in
+  `.claude/settings.json`, and auto mode allows a push to `main`. This rule is the only guard
+  there; the deny list stays for sessions outside project threads and on the maintainer's PC.
 - Every change on its own `feature/<topic>` branch with a PR into `main`; the maintainer reviews and
   merges. Never commit or push to `main`, never force-push, never rebase (merge `main` in).
   `git fetch origin main` before branching: a fresh clone's `origin/main` can be stale.
