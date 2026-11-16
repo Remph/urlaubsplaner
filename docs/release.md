@@ -117,7 +117,9 @@ installable). On both emulators (API 30 and 37) and, with the maintainer's OK, t
 6. Einstellungen > Über die App: the three licence texts open, the credits are there.
 7. Tablet profile (smallest width 600 dp): rotate.
 8. `adb logcat` during all of it, filtered on the app's process: no `FATAL EXCEPTION`, no
-   `ClassNotFoundException`, `NoSuchMethodException` or `NoSuchFieldException`.
+   `ClassNotFoundException`, `NoClassDefFoundError`, `NoSuchMethodException`,
+   `NoSuchFieldException` or `Resources$NotFoundException` (the last one is what the resource
+   shrinker causes when it drops something that is looked up at run time).
 
 **Reading a crash from a shrunk build.** A stack trace shows short names (`a.b.c`). Save the
 `app/build/outputs/mapping/release/mapping.txt` of every released APK (it is not in git: it is
@@ -135,7 +137,8 @@ The standard check (`./gradlew lint test assembleDebug spotlessCheck`) is not en
 the instrumented tests (`connectedDebugAndroidTest`, on both emulators, not the phone) and the widget cannot run in the cloud. Install the signed
 release APK on the phone (the debug build has its own application ID `de.remph.urlaubsplaner.debug`, so it can stay installed next to it) and walk through: first
 start, choose a Land, enter the entitlement, mark days, bridge days, widget (small and big),
-backup export and import, calendar export, German and English, dark mode.
+backup export and import, calendar export, German and English, dark mode. The release APK is
+shrunk by R8: "Test of a shrunk APK" above is the full list.
 
 ## Making a release (checklist)
 
@@ -143,7 +146,10 @@ backup export and import, calendar export, German and English, dark mode.
    `app/build.gradle.kts`, adds `fastlane/metadata/android/de-DE/changelogs/<versionCode>.txt` and
    the same for `en-US` (at most 500 characters), and updates the screenshots and the school holiday
    file if they changed. The maintainer merges it after the review.
-2. Build the signed APK on the PC and test it (above).
+2. Build the signed APK on the PC and test it (above, including "Test of a shrunk APK"). Keep
+   `app/build/outputs/mapping/release/mapping.txt` of exactly that build, named after the version
+   (for example `mapping-1.0.0.txt`), outside git: without it a crash report from a user cannot be
+   read.
 3. Tag the merge commit **`v<versionName>`**, for example `v0.9.0`, and push the tag. F-Droid
    builds from tags: the tag must be on the commit that has that `versionCode`.
 4. A **GitHub release** with the signed APK attached, only when the maintainer asks. Name the file
