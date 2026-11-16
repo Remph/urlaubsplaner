@@ -3,6 +3,7 @@ package de.remph.urlaubsplaner.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
@@ -30,6 +31,7 @@ class WidgetRefresher(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var watching: Job? = null
+    private val renderer = WidgetRenderer()
 
     private val _revision = MutableStateFlow(0)
 
@@ -78,17 +80,16 @@ class WidgetRefresher(
     }
 
     /**
-     * Asks the system for the placed widgets and updates each by its id. `updateAll` asks Glance,
+     * Draws every placed widget again, by the ids the system reports (`updateAll` asks Glance,
      * which keeps its own list of receivers in a file of the app; after "Clear data" that list is
-     * gone and is only rebuilt on some paths (parked item 7). The system's list is always right.
-     * A widget that fails is logged and skipped: an exception must not end the watch in [start],
-     * or no widget would be drawn again until the process dies.
+     * gone and is only rebuilt on some paths, parked item 7). A widget that fails is logged and
+     * skipped: an exception must not end the watch in [start], or no widget would be drawn again
+     * until the process dies.
      */
     private suspend fun redraw() {
         invalidate()
         val manager = AppWidgetManager.getInstance(context)
-        val glance = GlanceAppWidgetManager(context)
-        for ((receiver, widget) in KINDS) {
+        for (receiver in WIDGET_RECEIVERS) {
             val ids =
                 try {
                     manager.getAppWidgetIds(ComponentName(context, receiver)).toList()
@@ -97,19 +98,45 @@ class WidgetRefresher(
                     continue
                 }
             updateEach(ids, onError = { id, e -> Log.w(TAG, "Widget $id not drawn", e) }) { id ->
-                widget().update(context, glance.getGlanceIdBy(id))
+                drawNow(id)
+            }
+        }
+    }
+
+    /**
+     * Draws one placed widget now, in this process (see [WidgetRenderer]). Used when the app has
+     * just changed what the widget shows, for example the colour in the setup screen. A session
+     * that Glance still has running reads the new state through [revision] ([invalidate] first).
+     * If composing fails the old route is the fallback: Glance's `update()` queues the draw for
+     * its session, which may come late but comes.
+     */
+    suspend fun drawNow(appWidgetId: Int) {
+        val started = SystemClock.elapsedRealtime()
+        try {
+            val widget = widgetFor(context, appWidgetId)
+            val glanceId = GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId)
+            val snapshot = widget.snapshot(context, glanceId)
+            val views =
+                renderer.render(context, widgetSize(context, appWidgetId), snapshot, widget.layout)
+            AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, views)
+            Log.i(TAG, "Widget $appWidgetId drawn in ${SystemClock.elapsedRealtime() - started} ms")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Widget $appWidgetId not drawn directly, asking Glance", e)
+            try {
+                val widget = widgetFor(context, appWidgetId)
+                widget.update(context, GlanceAppWidgetManager(context).getGlanceIdBy(appWidgetId))
+            } catch (e2: CancellationException) {
+                throw e2
+            } catch (e2: Exception) {
+                Log.w(TAG, "Widget $appWidgetId not drawn by Glance either", e2)
             }
         }
     }
 
     private companion object {
         const val TAG = "WidgetRefresher"
-
-        val KINDS: List<Pair<Class<out WidgetReceiver>, () -> UrlaubsplanerWidget>> =
-            listOf(
-                UrlaubsplanerWidgetReceiver::class.java to { UrlaubsplanerWidget() },
-                UrlaubsplanerBigWidgetReceiver::class.java to { UrlaubsplanerBigWidget() },
-            )
 
         // Marking a range writes many rows; one redraw after they are all in is enough.
         const val DEBOUNCE_MILLIS = 500L

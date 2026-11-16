@@ -14,7 +14,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
-import androidx.glance.currentState
+import androidx.glance.appwidget.state.getAppWidgetState
 import de.remph.urlaubsplaner.UrlaubsplanerApp
 import de.remph.urlaubsplaner.core.widget.WidgetStatus
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
  * room it was made for. Each placed widget keeps its own [WidgetStyle] in Glance's state.
  */
 open class UrlaubsplanerWidget(
-    private val layout: WidgetLayout = WidgetLayout.SMALL,
+    internal val layout: WidgetLayout = WidgetLayout.SMALL,
 ) : GlanceAppWidget() {
     // The cell the launcher gives is the size of the layout; nothing to choose between.
     override val sizeMode = SizeMode.Single
@@ -39,21 +39,40 @@ open class UrlaubsplanerWidget(
         val refresher = (context.applicationContext as UrlaubsplanerApp).widgetRefresher
         // Taken before the first read, so a change in between reads the data again.
         val seen = refresher.revision.value
-        val first = load(context)
+        val first = snapshot(context, id)
         provideContent {
-            val model = liveModel(first, seen, refresher.revision) { load(context) }
-            WidgetContent(model, WidgetStyle.from(currentState<Preferences>()), layout)
+            // Not `currentState`: that arrives as an event in Glance's session and waits for the
+            // session's background job (see [WidgetRefresher.drawNow]). The style is read from the
+            // same place, so the revision brings both.
+            val (model, style) =
+                liveModel(
+                    first,
+                    seen,
+                    refresher.revision,
+                ) { snapshot(context, id) }
+            WidgetContent(model, style, layout)
         }
     }
 
-    private suspend fun load(context: Context): WidgetModel {
+    /** What the widget shows now: the data and the style the user set up for this widget. */
+    internal suspend fun snapshot(
+        context: Context,
+        id: GlanceId,
+    ): WidgetSnapshot {
         val app = context.applicationContext as UrlaubsplanerApp
         val language = WidgetLanguage.of(context)
         val data = withContext(Dispatchers.IO) { app.repository.readAll() }
         val status = WidgetStatus.of(app.clock, data.settings, data.entitlements, data.marks)
-        return WidgetModel.of(status, language.context, language.locale)
+        val style = WidgetStyle.from(getAppWidgetState<Preferences>(context, id))
+        return WidgetSnapshot(WidgetModel.of(status, language.context, language.locale), style)
     }
 }
+
+/** The data and the style of one widget, read together. */
+internal data class WidgetSnapshot(
+    val model: WidgetModel,
+    val style: WidgetStyle,
+)
 
 /**
  * The model of a widget whose data stays current. Glance keeps a session alive for about a minute
@@ -64,12 +83,12 @@ open class UrlaubsplanerWidget(
  * [seen], the value [first] was read at.
  */
 @Composable
-internal fun liveModel(
-    first: WidgetModel,
+internal fun <T> liveModel(
+    first: T,
     seen: Int,
     revision: StateFlow<Int>,
-    load: suspend () -> WidgetModel,
-): WidgetModel {
+    load: suspend () -> T,
+): T {
     val current by revision.collectAsState()
     val model by produceState(first, current) {
         if (current != seen) value = load()
