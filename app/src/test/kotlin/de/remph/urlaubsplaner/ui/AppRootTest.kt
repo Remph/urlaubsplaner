@@ -86,8 +86,9 @@ class AppRootTest {
     private fun tab(text: String) =
         hasText(text) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
 
+    // A ceiling, not a delay: a full run under load took more than 5 s once for a sheet to appear.
     private fun waitForText(text: String) =
-        compose.waitUntil(5_000) {
+        compose.waitUntil(15_000) {
             compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -319,7 +320,7 @@ class AppRootTest {
         compose.onNode(tab("Kalender")).assertIsSelected()
         assertEquals(CalendarMode.YEAR, planner.calendarMode.value)
         assertEquals(YearMonth.of(2027, 3), planner.calendarMonth.value)
-        compose.waitUntil(5_000) {
+        compose.waitUntil(15_000) {
             compose
                 .onAllNodes(hasContentDescription("Jahresübersicht 2027", substring = true))
                 .fetchSemanticsNodes()
@@ -352,7 +353,7 @@ class AppRootTest {
 
         // Marking today is what the shortcut is for; it closes the sheet.
         compose.onNodeWithText("Eintragen").performClick()
-        compose.waitUntil(5_000) {
+        compose.waitUntil(15_000) {
             compose.onAllNodesWithText("Ganzer Tag").fetchSemanticsNodes().isEmpty()
         }
         compose.onNode(tab("Übersicht")).performClick()

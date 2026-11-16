@@ -683,6 +683,10 @@ How it is built:
 - Labels are German first and English second. Long labels stay within the 25 characters that Android
   documents (`ShortcutsTest`); the short ones are a little over the 10 that it recommends
   ("Jahresansicht", "Heute eintragen"), which launchers shorten or wrap.
+- The labels are resolved by the launcher from the app's resources, so they probably follow the
+  system language, not the language chosen in the app's settings (not tried; the screen they open
+  is in the app's language). Following the in-app choice would need dynamic shortcuts that the app
+  renews at each language change; not done.
 - Not on a phone yet: how the launcher of the maintainer's phone shows them (order, icon shape, label
   length), and a start of each shortcut from a cold app. The instrumented test
   (`ShortcutsOnDeviceTest`) starts each shortcut's intent on an emulator.
