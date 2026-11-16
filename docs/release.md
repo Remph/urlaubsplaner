@@ -80,14 +80,54 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 (`apksigner` is in the Android SDK's `build-tools` folder.) The SHA-256 line must be the
 fingerprint written down above. Do not put the APK in git (`*.apk` is ignored).
 
-### R8 (code shrinking) is off
+### R8 (code shrinking) is on
 
-`isMinifyEnabled` is `false` for 0.9.0. Tried in the cloud on 2026-10-26: with R8 the release APK
-drops from about 30 MB to about 5.4 MB and the build passes, but Room, Glance, WorkManager and
-kotlinx-serialization reach classes by reflection and the cloud has no emulator, so a shrunk APK
-was never run. To turn it on later, do it in its own PR and test the release APK on a phone: open
-the app, mark days, export and **import a backup**, add both widgets and let them update, change
-the language. Missing rules go into a new `app/proguard-rules.pro` (not there yet).
+Since 1.0.0 the release build runs R8 (`isMinifyEnabled`, `isShrinkResources`, the default optimize
+rules and `app/proguard-rules.pro`). Debug builds stay unshrunk. Numbers (cloud, 2026-11-16): the
+release APK is about 5.0 MB instead of 30.5 MB; the build has no missing-class warnings.
+
+What was checked without a device (2026-11-16): the libraries bring their own keep rules (Room's
+`RoomDatabase` constructors, WorkManager's workers, Glance's `ActionCallback`s and protobuf, lifecycle
+and DataStore); every class the merged manifest names (activities, both widget receivers, Glance's
+and WorkManager's services and receivers, `FileProvider`) is in the shrunk dex under its own name;
+the app has no reflection of its own (no `Class.forName`, no `@Serializable` classes: the backup
+reads and writes a `JsonElement` tree, resources are not looked up by name). So the app needs only
+two lines of its own: `-keepattributes SourceFile,LineNumberTable` and `-renamesourcefileattribute
+SourceFile`, which keep line numbers in stack traces.
+
+Why the instrumented tests stay on the debug build: they are in-process tests that call the app's
+classes by name (`VacationCalculator`, `SchoolHolidayAsset`, `FormatsKt`, ...) and Compose's test
+library reaches into Compose's runtime internals. R8 removes or renames both, so the test APK would
+fail with `NoClassDefFoundError`; keeping them would mean keeping nearly everything and testing a
+build that is no longer the shrunk one (tried 2026-11-16 with a second build type, thrown away).
+The shrunk APK is tested from the outside instead, as below.
+
+**Test of a shrunk APK** (on the PC, after every change to the rules, to a dependency or to R8
+itself; the maintainer's signing key from `keystore.properties` makes `./gradlew assembleRelease`
+installable). On both emulators (API 30 and 37) and, with the maintainer's OK, the phone:
+
+1. Install over the previous release (0.11.1) with data and a placed widget, update with
+   `adb install -r`: the data is still there, the widget is redrawn.
+2. First start, choose a Land, enter the entitlement, mark days (tap and drag), bridge days,
+   year and month view, the language (Deutsch, English, system).
+3. Widget, small and big: place both, change the colour twice, mark a day (the widget follows),
+   rotate the phone.
+4. Backup: export a file, delete some days, import the file, check the days and the widget.
+5. Calendar export (ICS): save the file, "In Kalender öffnen".
+6. Einstellungen > Über die App: the three licence texts open, the credits are there.
+7. Tablet profile (smallest width 600 dp): rotate.
+8. `adb logcat` during all of it, filtered on the app's process: no `FATAL EXCEPTION`, no
+   `ClassNotFoundException`, `NoSuchMethodException` or `NoSuchFieldException`.
+
+**Reading a crash from a shrunk build.** A stack trace shows short names (`a.b.c`). Save the
+`app/build/outputs/mapping/release/mapping.txt` of every released APK (it is not in git: it is
+large, about 45 MB; a rebuild of the tag normally gives the same file, but do not rely on it), then
+
+```
+retrace mapping.txt trace.txt
+```
+
+(`retrace` is in the Android SDK's `cmdline-tools/latest/bin`.)
 
 ## Before a release: test on the phone
 
