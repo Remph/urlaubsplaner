@@ -2,6 +2,7 @@ package de.remph.urlaubsplaner.ui
 
 import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.remph.urlaubsplaner.planner.CalendarShortcut
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -32,5 +33,48 @@ class TabRequestTest {
         assertNull(TabRequest.from(null))
         assertNull(TabRequest.from(Intent(Intent.ACTION_MAIN)))
         assertNull(TabRequest.from(Intent("de.remph.urlaubsplaner.action.OPEN_NOWHERE")))
+    }
+
+    @Test
+    fun `every shortcut opens the calendar tab and says which view`() {
+        for (shortcut in CalendarShortcut.entries) {
+            val request = TabRequest.from(Intent(TabRequest.action(shortcut)))
+
+            assertEquals(Tab.CALENDAR, request?.tab)
+            assertEquals(shortcut, request?.shortcut)
+        }
+    }
+
+    @Test
+    fun `the widget's taps ask for no shortcut`() {
+        for (tab in Tab.entries) {
+            assertNull(TabRequest.from(Intent(TabRequest.action(tab)))?.shortcut)
+        }
+    }
+
+    @Test
+    fun `the shortcuts and the tabs never share an action`() {
+        val actions =
+            Tab.entries.map { TabRequest.action(it) } +
+                CalendarShortcut.entries.map { TabRequest.action(it) }
+
+        assertEquals(actions.size, actions.toSet().size)
+    }
+
+    @Test
+    fun `the actions in the shortcut file are the ones the app reads`() {
+        // res/xml/shortcuts.xml spells the actions out; a rename here must not leave it behind.
+        assertEquals(
+            "de.remph.urlaubsplaner.action.SHORTCUT_MONTH",
+            TabRequest.action(CalendarShortcut.MONTH),
+        )
+        assertEquals(
+            "de.remph.urlaubsplaner.action.SHORTCUT_YEAR",
+            TabRequest.action(CalendarShortcut.YEAR),
+        )
+        assertEquals(
+            "de.remph.urlaubsplaner.action.SHORTCUT_MARK_TODAY",
+            TabRequest.action(CalendarShortcut.MARK_TODAY),
+        )
     }
 }

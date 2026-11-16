@@ -648,6 +648,45 @@ saved. A quiet reminder, no notification and no new permission:
 - Wording is in `strings.xml` (`backup_hint_*`, `backup_last`, `backup_never`); the two day counts
   are `BackupReminder.OLD_AFTER_DAYS` and `FIRST_HINT_AFTER_DAYS`.
 
+### App shortcuts (1.0.0, parked item 30)
+
+A long press on the app icon offers three shortcuts, the maintainer's choice of 2026-11-16, in this
+order: **Kalender**, **Jahresansicht** and **Heute eintragen** (English: Calendar, Year view, Add today).
+Each ends in the same screen from a cold start and from a running app, whatever the user had open:
+
+- **Kalender:** the Kalender tab, month view, the current month.
+- **Jahresansicht:** the Kalender tab, year view, the current year.
+- **Heute eintragen:** the Kalender tab, month view, the current month, with the day sheet open for
+  today (the usual sheet: whole or half day, "Bis", Eintragen). A weekend or a holiday shows the
+  sheet's facts and no button, as for any such day; before a Land is chosen there is no sheet, only
+  the calendar's note that points to the settings.
+
+How it is built:
+
+- Static shortcuts in `res/xml/shortcuts.xml`, announced by the `android.app.shortcuts` meta-data on
+  `MainActivity`. They exist right after the install and need no code or permission.
+- Each shortcut's intent has only an action (`de.remph.urlaubsplaner.action.SHORTCUT_MONTH`, `_YEAR`,
+  `_MARK_TODAY`), like the widget's taps. `TabRequest.from` turns it into a request for the calendar
+  tab plus a `CalendarShortcut`; `AppRoot` shows the tab and calls `PlannerViewModel.openShortcut`,
+  which reads the date again (an app that stayed in memory overnight), sets mode and month and, for
+  "Heute eintragen", sets `dayToMarkRequest`. `CalendarScreen` takes that request at once and opens
+  the sheet, so a later visit to the tab does not open it again. `MainActivity` is `singleTask`:
+  a running app gets the shortcut in `onNewIntent`, a new start in `onCreate` (only at a real start,
+  not after a rotation).
+- `targetPackage` is the string resource `shortcut_package`: the debug build has the application ID
+  `de.remph.urlaubsplaner.debug`, and a static shortcut whose package differs from the app's own is
+  dropped without a message. `src/debug/res/values/shortcut_package.xml` overrides the release value;
+  `ShortcutsTest` compares it with the real package name.
+- Icons: adaptive icons in the app icon's teal with a white glyph (calendar page, twelve month
+  tiles, calendar page with a plus), so they read the same on a light and a dark launcher. Preview:
+  `design/1.0.0/shortcuts/` in the project folder.
+- Labels are German first and English second. Long labels stay within the 25 characters that Android
+  documents (`ShortcutsTest`); the short ones are a little over the 10 that it recommends
+  ("Jahresansicht", "Heute eintragen"), which launchers shorten or wrap.
+- Not on a phone yet: how the launcher of the maintainer's phone shows them (order, icon shape, label
+  length), and a start of each shortcut from a cold app. The instrumented test
+  (`ShortcutsOnDeviceTest`) starts each shortcut's intent on an emulator.
+
 ## Status
 
 - [x] M0 Skeleton (PR #3, merged 2026-10-25)

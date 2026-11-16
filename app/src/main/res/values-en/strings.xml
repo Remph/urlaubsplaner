@@ -141,6 +141,14 @@
     <string name="nav_calendar_this_year">Go to this year</string>
     <string name="back">Back</string>
 
+    <!-- Launcher shortcuts (long press on the app icon). -->
+    <string name="shortcut_month_short">Calendar</string>
+    <string name="shortcut_month_long">Open calendar</string>
+    <string name="shortcut_year_short">Year view</string>
+    <string name="shortcut_year_long">Open year view</string>
+    <string name="shortcut_today_short">Add today</string>
+    <string name="shortcut_today_long">Add today as vacation</string>
+
     <!-- Settings list -->
     <string name="settings_vacation_title">Vacation %1$d</string>
     <string name="vacation_not_entered">Not entered yet</string>

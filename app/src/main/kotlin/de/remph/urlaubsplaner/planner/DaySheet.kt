@@ -72,7 +72,7 @@ fun DaySheet(
     val showGranted = shown.grantedEnabled && date.isAfter(shown.today)
     var granted by remember(date) { mutableStateOf(shown.isGranted(date)) }
     var end by remember(date) { mutableStateOf(initialEnd) }
-    var picking by remember { mutableStateOf(false) }
+    var picking by remember(date) { mutableStateOf(false) }
     val days = shown.costlyDays(date, end)
     val cost = days.fold(VacationDays.ZERO) { sum, day -> sum + shown.cost(day, mark) }
     val remaining = shown.remainingAfter(days, mark)

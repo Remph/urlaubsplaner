@@ -99,8 +99,13 @@ fun AppRoot(
         }
         tab = target
     }
-    // A tap on the widget asks for a tab; it wins over where the user was.
-    LaunchedEffect(request) { request?.let { show(it.tab) } }
+    // A tap on the widget or a launcher shortcut asks for a tab; it wins over where the user was.
+    LaunchedEffect(request) {
+        request?.let {
+            show(it.tab)
+            it.shortcut?.let(plannerViewModel::openShortcut)
+        }
+    }
     // A phone keeps the app in memory for days; the status must follow the date.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { plannerViewModel.refreshToday() }
     Scaffold(

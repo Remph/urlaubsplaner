@@ -344,6 +344,71 @@ class PlannerViewModelTest {
     }
 
     @Test
+    fun `the month shortcut shows this month in the month view`() {
+        val model = viewModel()
+        model.showMode(CalendarMode.YEAR)
+        model.showMonth(YearMonth.of(2028, 6))
+
+        model.openShortcut(CalendarShortcut.MONTH)
+
+        assertEquals(CalendarMode.MONTH, model.calendarMode.value)
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+        assertNull(model.dayToMarkRequest.value)
+    }
+
+    @Test
+    fun `the year shortcut shows this year in the year view`() {
+        val model = viewModel()
+        model.showMonth(YearMonth.of(2027, 9))
+
+        model.openShortcut(CalendarShortcut.YEAR)
+
+        assertEquals(CalendarMode.YEAR, model.calendarMode.value)
+        assertEquals(2027, model.calendarMonth.value.year)
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+        assertNull(model.dayToMarkRequest.value)
+    }
+
+    @Test
+    fun `the mark today shortcut asks for the sheet of today until the calendar takes it`() {
+        val model = viewModel()
+        model.showMode(CalendarMode.YEAR)
+        model.showMonth(YearMonth.of(2028, 6))
+
+        model.openShortcut(CalendarShortcut.MARK_TODAY)
+
+        assertEquals(CalendarMode.MONTH, model.calendarMode.value)
+        assertEquals(YearMonth.of(2027, 3), model.calendarMonth.value)
+        assertEquals(fixture.date("2027-03-10"), model.dayToMarkRequest.value)
+
+        model.dayToMarkTaken()
+        assertNull(model.dayToMarkRequest.value)
+    }
+
+    @Test
+    fun `a shortcut that is not mark today withdraws a request that nobody took`() {
+        val model = viewModel()
+        model.openShortcut(CalendarShortcut.MARK_TODAY)
+
+        model.openShortcut(CalendarShortcut.MONTH)
+
+        assertNull(model.dayToMarkRequest.value)
+    }
+
+    @Test
+    fun `a shortcut uses the date of today even when the app stayed in memory since yesterday`() {
+        val clock = SteppingClock(fixture.clock)
+        val model = viewModelWith(clock)
+        viewModels.put("planner", model)
+        clock.today = "2028-01-02"
+
+        model.openShortcut(CalendarShortcut.MARK_TODAY)
+
+        assertEquals(YearMonth.of(2028, 1), model.calendarMonth.value)
+        assertEquals(fixture.date("2028-01-02"), model.dayToMarkRequest.value)
+    }
+
+    @Test
     fun `the overview follows the date after refreshToday`() {
         fixture.fill()
         val clock = SteppingClock(fixture.clock)

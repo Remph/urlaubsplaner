@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The application ID, for the launcher shortcuts (res/xml/shortcuts.xml): a resource XML
+         file cannot use ${applicationId}. The debug build overrides it in src/debug/res with its
+         own ID (applicationIdSuffix in app/build.gradle.kts); a test checks both against the real one. -->
+    <string name="shortcut_package" translatable="false">de.remph.urlaubsplaner</string>
+</resources>

@@ -35,6 +35,21 @@ import java.time.YearMonth
 enum class CalendarMode { MONTH, YEAR }
 
 /**
+ * What a launcher shortcut (long press on the app icon) opens. Each one ends in the same screen
+ * however the app was started, so the shortcut does not depend on where the user left it.
+ */
+enum class CalendarShortcut {
+    /** The calendar on the current month. */
+    MONTH,
+
+    /** The calendar on the current year. */
+    YEAR,
+
+    /** The calendar on the current month with the day sheet open for today. */
+    MARK_TODAY,
+}
+
+/**
  * The overview (always the current year) and the calendar (the year the user steps to), and the
  * actions on marked days. Both are a [YearView]; null until the stored data has been read, so a
  * screen does not flash "nothing entered" first.
@@ -169,6 +184,29 @@ class PlannerViewModel(
 
     fun showMode(mode: CalendarMode) {
         shownMode.value = mode
+    }
+
+    private val dayToMark = MutableStateFlow<LocalDate?>(null)
+
+    /**
+     * A day whose sheet the calendar should open, set by the "mark today" shortcut. The calendar
+     * takes it with [dayToMarkTaken], so a later visit to the tab does not open the sheet again.
+     */
+    val dayToMarkRequest: StateFlow<LocalDate?> = dayToMark
+
+    fun dayToMarkTaken() {
+        dayToMark.value = null
+    }
+
+    /**
+     * Brings the calendar to what a launcher shortcut promises. The date is read again first: the
+     * app can have been in memory since yesterday, and "today" must be today.
+     */
+    fun openShortcut(shortcut: CalendarShortcut) {
+        refreshToday()
+        showMode(if (shortcut == CalendarShortcut.YEAR) CalendarMode.YEAR else CalendarMode.MONTH)
+        showToday()
+        dayToMark.value = today.value.takeIf { shortcut == CalendarShortcut.MARK_TODAY }
     }
 
     /** Opens the month of [date] in the month view and asks its tile for the highlight. */
