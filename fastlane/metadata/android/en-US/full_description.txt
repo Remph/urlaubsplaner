@@ -26,6 +26,6 @@ The app has no internet access, no account, no ads and no tracking. To back up o
 <b>More</b>
 • German and English, switchable in the app
 • Light, dark and pure black, optionally with the colours of your wallpaper
-• Free software under the GPL-3.0, source code on GitHub. The school holiday data comes from OpenHolidays (ODbL).
+• Free software under the GPL-3.0 or later, source code on GitHub. The school holiday data comes from OpenHolidays (ODbL).
 
 Urlaubsplaner is a private, non-profit project. Bugs and wishes are welcome as issues on GitHub.

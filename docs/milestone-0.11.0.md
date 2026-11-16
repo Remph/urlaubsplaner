@@ -194,7 +194,7 @@ comes after 0.11.0 is out.
 - Parked 29: app baseline profile, generated on the maintainer's PC.
 - Parked 7: widget stale after "Clear data" plus restore (needs the phone).
 - Parked 11: widget receivers `exported="true"` (launcher test on the phone first).
-- Parked 14: GPL-3.0-only or "or later".
+- Parked 14: GPL-3.0-only or "or later" (decided "or later" on 2026-11-16, done in 1.0.0).
 - Parked 3: both languages complete, store texts and README.
 - Parked 30 (was suggestion S3): app shortcuts on the app icon (parked for 1.0.0 by the maintainer, 2026-11-10).
 - Full device test on both emulators and the phone, then F-Droid (parked 17): the 3-month rule
