@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Keeps the widgets current. The app process is the only writer of the database, so while it
@@ -32,6 +34,10 @@ class WidgetRefresher(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var watching: Job? = null
     private val renderer = WidgetRenderer()
+
+    // A whole draw (read, compose, publish) at a time: two draws that overlapped could publish in
+    // the other order than they read, and the widget would keep the older data until the next draw.
+    private val drawLock = Mutex()
 
     private val _revision = MutableStateFlow(0)
 
@@ -110,7 +116,9 @@ class WidgetRefresher(
      * If composing fails the old route is the fallback: Glance's `update()` queues the draw for
      * its session, which may come late but comes.
      */
-    suspend fun drawNow(appWidgetId: Int) {
+    suspend fun drawNow(appWidgetId: Int) = drawLock.withLock { draw(appWidgetId) }
+
+    private suspend fun draw(appWidgetId: Int) {
         val started = SystemClock.elapsedRealtime()
         try {
             val widget = widgetFor(context, appWidgetId)

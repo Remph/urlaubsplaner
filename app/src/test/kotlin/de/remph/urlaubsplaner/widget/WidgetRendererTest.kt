@@ -1,9 +1,11 @@
 package de.remph.urlaubsplaner.widget
 
 import android.content.Context
+import android.os.Parcel
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.RemoteViews
 import android.widget.TextView
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -12,7 +14,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -95,7 +96,7 @@ class WidgetRendererTest {
     }
 
     @Test
-    fun `a draw gives views that can be sent to the launcher`() {
+    fun `a draw survives the trip to the launcher`() {
         val views =
             runBlocking {
                 renderer.render(
@@ -106,6 +107,18 @@ class WidgetRendererTest {
                 )
             }
 
-        assertNotNull(views.layoutId)
+        // AppWidgetManager hands the RemoteViews to the launcher as a Parcel, click intents included.
+        val parcel = Parcel.obtain()
+        val arrived =
+            try {
+                views.writeToParcel(parcel, 0)
+                parcel.setDataPosition(0)
+                RemoteViews.CREATOR.createFromParcel(parcel)
+            } finally {
+                parcel.recycle()
+            }
+
+        val shown = texts(arrived.apply(context, FrameLayout(context))).map { it.text.toString() }
+        assertEquals(true, "12,5" in shown)
     }
 }
