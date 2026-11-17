@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcuts (long press on the app icon), in the order the maintainer named them. Each
+     intent is the plain action that MainActivity reads through TabRequest, so a shortcut opens the
+     same way from a cold start and into a running app.
+     The target package is written out, not a "@string/..." reference: the launcher service reads the
+     attribute raw and would start a package called "@2131689790" ("This app cannot be opened"). The
+     debug build has its own application ID, so src/debug/res/xml/shortcuts.xml is a copy of this
+     file with the debug ID; a static shortcut with another package than the app is dropped. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="calendar"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_month"
+        android:shortcutShortLabel="@string/shortcut_month_short"
+        android:shortcutLongLabel="@string/shortcut_month_long">
+        <intent
+            android:action="de.remph.urlaubsplaner.action.SHORTCUT_MONTH"
+            android:targetPackage="de.remph.urlaubsplaner"
+            android:targetClass="de.remph.urlaubsplaner.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="year"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_year"
+        android:shortcutShortLabel="@string/shortcut_year_short"
+        android:shortcutLongLabel="@string/shortcut_year_long">
+        <intent
+            android:action="de.remph.urlaubsplaner.action.SHORTCUT_YEAR"
+            android:targetPackage="de.remph.urlaubsplaner"
+            android:targetClass="de.remph.urlaubsplaner.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="mark_today"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_today"
+        android:shortcutShortLabel="@string/shortcut_today_short"
+        android:shortcutLongLabel="@string/shortcut_today_long">
+        <intent
+            android:action="de.remph.urlaubsplaner.action.SHORTCUT_MARK_TODAY"
+            android:targetPackage="de.remph.urlaubsplaner"
+            android:targetClass="de.remph.urlaubsplaner.MainActivity" />
+    </shortcut>
+</shortcuts>

@@ -1,0 +1,1 @@
+Neu: Die stabile Version 1.0. Ein langer Druck auf das App-Symbol bietet drei Kurzbefehle: Kalender, Jahresansicht und Heute eintragen. Die App ist viel kleiner (etwa 5 statt 30 MB) und startet schneller. Eine geänderte Widget-Farbe zeigt sich sofort. Die Lizenz ist jetzt GPL-3.0 oder später. Update über 0.11.x: Daten und Sicherungsdatei bleiben unverändert.

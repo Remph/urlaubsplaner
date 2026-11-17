@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Remph
+
 package de.remph.urlaubsplaner.ui
 
 import android.content.Context
@@ -28,6 +31,7 @@ import de.remph.urlaubsplaner.core.balance.MarkedDays
 import de.remph.urlaubsplaner.data.BackupFileStore
 import de.remph.urlaubsplaner.data.CalendarFileStore
 import de.remph.urlaubsplaner.planner.CalendarMode
+import de.remph.urlaubsplaner.planner.CalendarShortcut
 import de.remph.urlaubsplaner.planner.PlannerFixture
 import de.remph.urlaubsplaner.planner.PlannerViewModel
 import de.remph.urlaubsplaner.settings.CalendarExporter
@@ -37,6 +41,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -84,8 +89,9 @@ class AppRootTest {
     private fun tab(text: String) =
         hasText(text) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
 
+    // A ceiling, not a delay: a full run under load took more than 5 s once for a sheet to appear.
     private fun waitForText(text: String) =
-        compose.waitUntil(5_000) {
+        compose.waitUntil(15_000) {
             compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -284,6 +290,92 @@ class AppRootTest {
         compose.waitForIdle()
 
         compose.onNode(tab("Kalender")).assertIsSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the Kalender shortcut opens this month in the month view wherever the user was`() {
+        fixture.fill()
+        compose.onNode(tab("Einstellungen")).performClick()
+        planner.showMode(CalendarMode.YEAR)
+        planner.showMonth(YearMonth.of(2028, 6))
+        compose.waitForIdle()
+
+        request = TabRequest(Tab.CALENDAR, CalendarShortcut.MONTH)
+
+        compose.waitForIdle()
+        compose.onNode(tab("Kalender")).assertIsSelected()
+        assertEquals(CalendarMode.MONTH, planner.calendarMode.value)
+        assertEquals(YearMonth.of(2027, 3), planner.calendarMonth.value)
+        waitForText("Karfreitag")
+        compose.onAllNodesWithText("Ganzer Tag").assertCountEquals(0)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the Jahresansicht shortcut opens this year in the year view`() {
+        fixture.fill()
+        planner.showMonth(YearMonth.of(2027, 9))
+
+        request = TabRequest(Tab.CALENDAR, CalendarShortcut.YEAR)
+
+        compose.waitForIdle()
+        compose.onNode(tab("Kalender")).assertIsSelected()
+        assertEquals(CalendarMode.YEAR, planner.calendarMode.value)
+        assertEquals(YearMonth.of(2027, 3), planner.calendarMonth.value)
+        compose.waitUntil(15_000) {
+            compose
+                .onAllNodes(hasContentDescription("Jahresübersicht 2027", substring = true))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the Heute eintragen shortcut opens the sheet for today, once`() {
+        fixture.fill()
+
+        request = TabRequest(Tab.CALENDAR, CalendarShortcut.MARK_TODAY)
+
+        waitForText("Mittwoch, 10. März 2027")
+        compose.onNode(tab("Kalender")).assertIsSelected()
+        compose.onNodeWithText("Ganzer Tag").assertIsDisplayed()
+        assertEquals(CalendarMode.MONTH, planner.calendarMode.value)
+        assertEquals(YearMonth.of(2027, 3), planner.calendarMonth.value)
+        assertNull(planner.dayToMarkRequest.value)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the sheet of the Heute eintragen shortcut stays closed at a later visit`() {
+        fixture.fill()
+        request = TabRequest(Tab.CALENDAR, CalendarShortcut.MARK_TODAY)
+        waitForText("Mittwoch, 10. März 2027")
+        compose.onNodeWithText("Ganzer Tag").assertIsDisplayed()
+
+        // Marking today is what the shortcut is for; it closes the sheet.
+        compose.onNodeWithText("Eintragen").performClick()
+        compose.waitUntil(15_000) {
+            compose.onAllNodesWithText("Ganzer Tag").fetchSemanticsNodes().isEmpty()
+        }
+        compose.onNode(tab("Übersicht")).performClick()
+        compose.onNode(tab("Kalender")).performClick()
+        compose.waitForIdle()
+
+        compose.onAllNodesWithText("Ganzer Tag").assertCountEquals(0)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the Heute eintragen shortcut before a Land is chosen opens no sheet`() {
+        request = TabRequest(Tab.CALENDAR, CalendarShortcut.MARK_TODAY)
+
+        waitForText("Einstellungen öffnen")
+        compose.onNode(tab("Kalender")).assertIsSelected()
+        compose.waitForIdle()
+        assertNull(planner.dayToMarkRequest.value)
+        compose.onAllNodesWithText("Ganzer Tag").assertCountEquals(0)
     }
 
     @Test

@@ -26,6 +26,6 @@ Die App hat keinen Internetzugriff, kein Konto, keine Werbung und keine Auswertu
 <b>Mehr</b>
 • Deutsch und Englisch, umschaltbar in der App
 • Hell, dunkel und reines Schwarz, wahlweise mit den Farben deines Hintergrundbilds
-• Freie Software unter der GPL-3.0, der Quellcode liegt auf GitHub. Die Schulferien-Daten stammen von OpenHolidays (ODbL).
+• Freie Software unter der GPL-3.0 oder neuer, der Quellcode liegt auf GitHub. Die Schulferien-Daten stammen von OpenHolidays (ODbL).
 
 Urlaubsplaner ist ein privates Projekt ohne Gewinnabsicht. Fehler und Wünsche gern als Issue auf GitHub.

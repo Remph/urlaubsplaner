@@ -58,7 +58,8 @@ sie selbst speicherst oder schickst.
 
 ## Daten und Lizenzen
 
-- Der Quelltext steht unter der **GPL-3.0**, siehe [LICENSE](LICENSE).
+- Der Quelltext steht unter der **GPL-3.0 oder neuer** (SPDX: `GPL-3.0-or-later`), siehe
+  [LICENSE](LICENSE).
 - Die **Feiertage** berechnet die App selbst, nach den Gesetzen der Länder.
 - Die **Schulferien** stammen von der [OpenHolidays API](https://www.openholidaysapi.org) und
   stehen unter der Open Database License (ODbL). Sie liegen mit ihrem eigenen Lizenztext in
@@ -126,7 +127,7 @@ Backups and calendar exports go only where you save or send them yourself.
 
 ### Data and licences
 
-The source code is **GPL-3.0** ([LICENSE](LICENSE)). Public holidays are calculated by the app.
+The source code is **GPL-3.0 or later** (SPDX `GPL-3.0-or-later`, [LICENSE](LICENSE)). Public holidays are calculated by the app.
 School holidays are from the [OpenHolidays API](https://www.openholidaysapi.org) under the Open
 Database License (ODbL); the file and its licence text are in
 [data/school-holidays/](data/school-holidays/), see also [docs/data-sources.md](docs/data-sources.md).

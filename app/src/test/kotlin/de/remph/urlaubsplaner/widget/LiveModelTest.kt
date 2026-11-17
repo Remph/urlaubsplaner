@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Remph
+
 package de.remph.urlaubsplaner.widget
 
 import androidx.compose.material3.Text
@@ -71,5 +74,30 @@ class LiveModelTest {
         revision.value = 5
         rule.waitForIdle()
         rule.onNodeWithText("24").assertExists()
+    }
+
+    @Test
+    fun `a new style comes with the data when the snapshot is read again`() {
+        val revision = MutableStateFlow(3)
+        var colors = WidgetColors.LIGHT
+        rule.setContent {
+            val snapshot =
+                liveModel(
+                    WidgetSnapshot(status("26"), WidgetStyle(colors = WidgetColors.PHONE)),
+                    seen = 3,
+                    revision = revision,
+                ) { WidgetSnapshot(status("26"), WidgetStyle(colors = colors)) }
+            Text(snapshot.style.colors.name)
+        }
+        rule.onNodeWithText("PHONE").assertExists()
+
+        revision.value = 4
+        rule.waitForIdle()
+        rule.onNodeWithText("LIGHT").assertExists()
+
+        colors = WidgetColors.DARK
+        revision.value = 5
+        rule.waitForIdle()
+        rule.onNodeWithText("DARK").assertExists()
     }
 }
