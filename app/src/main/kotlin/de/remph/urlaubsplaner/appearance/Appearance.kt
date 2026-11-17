@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Remph
+
 package de.remph.urlaubsplaner.appearance
 
 /** Hell, dunkel, or what the system says (the maintainer, 2026-10-25). */

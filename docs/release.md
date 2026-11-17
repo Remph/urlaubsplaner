@@ -181,7 +181,7 @@ Quick Start Guide). `f-droid.org` itself is not reachable from the cloud, `gitla
 `changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100, 1101), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
 F-Droid requires `en-US`; `de-DE` is extra. Descriptions use only the HTML tags F-Droid allows.
 
-**What F-Droid checks**: free licence (GPL-3.0), only free dependencies and tools (no Google Play
+**What F-Droid checks**: free licence (GPL-3.0-or-later), only free dependencies and tools (no Google Play
 Services: the dependency audit in the about screen thread found only Apache-2.0 and BSD-3), no
 tracking or ads (the app has no INTERNET permission), tag per release, and that the app builds from
 source with their tools. The school holiday data is ODbL and sits in its own directory with the
@@ -211,7 +211,7 @@ which needs `fdroidserver` on a PC or in the fork's pipeline):
 ```yaml
 Categories:
   - Calendar & Agenda
-License: GPL-3.0-only
+License: GPL-3.0-or-later
 AuthorName: Remph
 SourceCode: https://github.com/Remph/urlaubsplaner
 IssueTracker: https://github.com/Remph/urlaubsplaner/issues
@@ -234,8 +234,9 @@ CurrentVersionCode: 901
 ```
 
 `AuthorName` is public: the maintainer chose the GitHub name Remph (2026-10-26). `License` is
-`GPL-3.0-only` because the project says "GPL-3.0" and no source file carries an "or any later
-version" notice; if the maintainer means "or later", change it here and add the notice to the sources. Likely
+`GPL-3.0-or-later`: the maintainer chose "or later" on 2026-11-16, and every source file carries the
+SPDX line (`gradle/license-header.txt`), so the three places (`LICENSE` and file headers, about
+screen and README, this metadata) say the same. Likely
 questions from the build: the JDK of F-Droid's build server against the one in `gradle/` (the project
 builds on JDK 17 and newer), whether it can fetch the Gradle version of the wrapper, and whether its
 Android SDK has platform 37 (`compileSdk` and `targetSdk` are 37, very new, not checked against

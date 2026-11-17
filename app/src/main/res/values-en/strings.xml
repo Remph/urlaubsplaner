@@ -333,7 +333,7 @@
     <string name="about_website">Website</string>
     <string name="about_source">Source code</string>
     <string name="about_licence">Licence of the app</string>
-    <string name="about_licence_value">GPL-3.0, free software</string>
+    <string name="about_licence_value">GPL-3.0 or later, free software</string>
     <string name="about_data_title">School holiday data</string>
     <string name="about_libraries_title">Libraries</string>
     <string name="about_libraries_body">AndroidX (Compose, Room, Glance and more), Kotlin and kotlinx are under the Apache License 2.0. The widget includes Protocol Buffers (BSD-3-Clause).</string>

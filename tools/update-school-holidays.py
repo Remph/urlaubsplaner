@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Remph
 """Rebuilds data/school-holidays/school-holidays.txt from the OpenHolidays API.
 
 Usage: python3 tools/update-school-holidays.py FIRST_YEAR LAST_YEAR

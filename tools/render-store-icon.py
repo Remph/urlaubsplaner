@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Remph
 """Renders the 512 px store icon (fastlane/metadata/android/*/images/icon.png).
 
 The geometry is copied from app/src/main/res/drawable/ic_launcher_foreground.xml (108 dp canvas)
