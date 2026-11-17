@@ -72,7 +72,9 @@ class ShortcutsTest {
                             shortcut.getValue("long"),
                             icon,
                             parser.text("action"),
-                            parser.text("targetPackage"),
+                            // Raw, as the launcher service reads it: a "@string/..." reference would come
+                            // out as "@<number>" here and make the system start a package of that name.
+                            parser.getAttributeValue(androidNs, "targetPackage"),
                             parser.text("targetClass"),
                         )
                 }

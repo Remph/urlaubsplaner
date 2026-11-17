@@ -673,10 +673,13 @@ How it is built:
   the sheet, so a later visit to the tab does not open it again. `MainActivity` is `singleTask`:
   a running app gets the shortcut in `onNewIntent`, a new start in `onCreate` (only at a real start,
   not after a rotation).
-- `targetPackage` is the string resource `shortcut_package`: the debug build has the application ID
-  `de.remph.urlaubsplaner.debug`, and a static shortcut whose package differs from the app's own is
-  dropped without a message. `src/debug/res/values/shortcut_package.xml` overrides the release value;
-  `ShortcutsTest` compares it with the real package name.
+- `targetPackage` is written out in `res/xml/shortcuts.xml`, not a `@string/...` reference: the launcher
+  service reads the attribute raw, so a reference makes it start a package called `@2131689790`
+  ("Diese App kann nicht geöffnet werden"; found on the phone, 2026-11-17). The debug build has the
+  application ID `de.remph.urlaubsplaner.debug`, and a static shortcut whose package differs from
+  the app's own is dropped without a message, so `src/debug/res/xml/shortcuts.xml` is a copy of the
+  file with the debug ID. `ShortcutsTest` reads the raw attribute and compares it with the real
+  package name.
 - Icons: adaptive icons in the app icon's teal with a white glyph (calendar page, twelve month
   tiles, calendar page with a plus), so they read the same on a light and a dark launcher. Preview:
   `design/1.0.0/shortcuts/` in the project folder.

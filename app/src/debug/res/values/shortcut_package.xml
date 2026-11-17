@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- The debug build's application ID: the release ID plus applicationIdSuffix ".debug". -->
-    <string name="shortcut_package" translatable="false">de.remph.urlaubsplaner.debug</string>
-</resources>
