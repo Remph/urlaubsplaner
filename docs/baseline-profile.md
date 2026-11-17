@@ -11,7 +11,9 @@ of 2026-11-16 and 2026-10-31 in `docs/plan.md`).
 - `app/src/release/generated/baselineProfiles/baseline-prof.txt` and `startup-prof.txt`: the
   committed profile (plain text, generated, do not edit by hand). The build turns it into the
   binary profile in the APK, after R8 has renamed the classes. A normal build, F-Droid's included,
-  only reads these files: it needs no device and no extra step.
+  only reads these files: it needs no device and no extra step. `startup-prof.txt` holds only what
+  the cold start touches (it orders the classes in the dex files), `baseline-prof.txt` everything
+  the journey touched, the startup part included.
 - `baselineprofile/` (module `:baselineprofile`): the journey that is recorded
   (`Journey.kt`), the generator (`BaselineProfileGenerator`) and the measurement
   (`StartupBenchmark`). It is test code: nothing of it ends up in the app. `-PcoreOnly` skips it
@@ -47,10 +49,18 @@ release if in doubt; a stale profile is not harmful, it only helps less.
 .\gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest
 ```
 
-(on the PC, device attached). `StartupBenchmark` runs the cold start and the journey without the
+(on the PC, device attached; on an emulator add
+`-Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR`, or the
+benchmark refuses to run). `StartupBenchmark` runs the cold start and the journey without the
 profile (`CompilationMode.None`, the state of a fresh install) and with it (`Partial`), ten and
 five runs each. Compare only numbers from the same session on the same device; wait after the
 emulator started (the first runs are 50 to 100 percent slower).
+
+On the API 30 emulator the macrobenchmark showed no cold start gain (2026-11-17, twice), while
+`adb shell am start -W` on the same APK showed 214 ms with `compile -m verify` against 186 ms with
+`compile -m speed-profile` (median of 12, about 13 percent). The benchmark waits for the first
+Compose screen through UiAutomator, which adds noise on that image; trust `am start -W` there, or a
+real phone.
 
 ## F-Droid
 
