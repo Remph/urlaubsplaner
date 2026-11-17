@@ -76,6 +76,34 @@ class PlacedWidget(
 
     fun awaitText(text: String): List<String> = awaitTexts { text in it }
 
+    /** The text colour of the first text that reads [text] on the widget now, or null. */
+    fun colorOf(text: String): Int? {
+        var found: Int? = null
+        instrumentation.runOnMainSync { found = firstColor(view, text) }
+        return found
+    }
+
+    /**
+     * Waits until the colour of [text] satisfies [accept] and returns it. The timeout is short on
+     * purpose: a colour that shows only after 12 to 40 s is the bug this guards against.
+     */
+    fun awaitColor(
+        text: String,
+        timeoutMillis: Long = COLOR_TIMEOUT_MILLIS,
+        accept: (Int) -> Boolean,
+    ): Int {
+        val end = System.currentTimeMillis() + timeoutMillis
+        var last = colorOf(text)
+        while (last == null || !accept(last)) {
+            if (System.currentTimeMillis() > end) {
+                throw AssertionError("The colour of '$text' did not change in time, it is $last")
+            }
+            Thread.sleep(POLL_MILLIS)
+            last = colorOf(text)
+        }
+        return last
+    }
+
     override fun close() {
         host.stopListening()
         host.deleteAppWidgetId(id)
@@ -112,6 +140,29 @@ class PlacedWidget(
         }
     }
 
+    private fun firstColor(
+        view: View,
+        text: String,
+    ): Int? =
+        when (view) {
+            is TextView -> {
+                view.currentTextColor.takeIf { view.text?.toString() == text }
+            }
+
+            is ViewGroup -> {
+                (0 until view.childCount).firstNotNullOfOrNull {
+                    firstColor(
+                        view.getChildAt(it),
+                        text,
+                    )
+                }
+            }
+
+            else -> {
+                null
+            }
+        }
+
     private fun shell(command: String) {
         val descriptor = instrumentation.uiAutomation.executeShellCommand(command)
         // Reading to the end waits for the command to finish.
@@ -121,6 +172,7 @@ class PlacedWidget(
     private companion object {
         const val HOST_ID = 0x7e57
         const val TIMEOUT_MILLIS = 20_000L
+        const val COLOR_TIMEOUT_MILLIS = 4_000L
         const val POLL_MILLIS = 250L
     }
 }

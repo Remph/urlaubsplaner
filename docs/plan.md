@@ -376,6 +376,23 @@ folder); the logic is `:core.widget.WidgetStatus` (unit-tested), the rest is `:a
   "Clear data". A widget that fails is logged and skipped, so the watch cannot die. A restored
   backup also calls `refresh()`, which starts the watch if the app start did not. The cause of
   "stale after Clear data plus restore" was not seen on a device; these remove the candidates.
+  Since 1.0.0 (parked item 31, widget colour shown 12 to 40 s late on the maintainer's phone,
+  2026-11-16) the app draws its widgets itself: `WidgetRefresher.drawNow` reads a `WidgetSnapshot`
+  (data and style) and `WidgetRenderer` composes `WidgetContent` with Glance's `GlanceRemoteViews`
+  straight to `RemoteViews`, no Glance session and no WorkManager job. Glance's `update()` hands
+  the change to a session that runs in a job; a stopped or deferred job (app in the background)
+  left the second colour change waiting. The style is read from Glance's preferences inside the
+  snapshot, no longer through `currentState`, so a session that still lives gets it with
+  `revision` like the data. `update()` stays only as the fallback when composing fails. The cause
+  in the job layer is the best fit for the 12 to 30 s steps seen on the phone, not confirmed with a
+  Glance debug log; the app logs each draw (`WidgetRefresher`, "drawn in N ms"). One draw at a
+  time (a lock around read, compose and publish), so the last draw also has the newest data.
+  Known limit, reviewed 2026-11-16: `GlanceRemoteViews` keeps its table of layout structures in
+  memory, Glance's own session keeps it in a file per widget, so on Android 12 and 12L (API 31
+  and 32) the two routes may pick the same root layout for different structures and the launcher
+  may reuse a view of the other structure. From Android 13 Glance empties the root before it
+  adds children, so nothing can stay behind. Not seen on a device; if a widget on Android 12
+  ever shows doubled or missing lines, draw through `update()` below API 33.
 - Exported: the two widget receivers are `exported="false"` since 0.11.1 (parked item 11; all their
   actions come from the system). `WidgetConfigActivity` stays `exported="true"`: the launcher
   starts it, and if that failed the widget could not be placed.

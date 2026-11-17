@@ -73,7 +73,10 @@ class WidgetConfigActivity : AppCompatActivity() {
                                 this@WidgetConfigActivity,
                                 glanceId,
                             ) { style.writeTo(it) }
-                            widget.update(this@WidgetConfigActivity, glanceId)
+                            // Drawn here and now: Glance's own update would wait for a
+                            // background job that may be deferred (see [WidgetRenderer]).
+                            app.widgetRefresher.invalidate()
+                            app.widgetRefresher.drawNow(appWidgetId)
                             app.widgetRefresher.start()
                             setResult(
                                 RESULT_OK,

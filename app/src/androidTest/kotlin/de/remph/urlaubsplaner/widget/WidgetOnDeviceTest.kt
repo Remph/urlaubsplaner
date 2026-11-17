@@ -5,6 +5,8 @@ package de.remph.urlaubsplaner.widget
 
 import android.appwidget.AppWidgetProvider
 import android.net.Uri
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.remph.urlaubsplaner.FreshApp
 import de.remph.urlaubsplaner.R
@@ -133,10 +135,46 @@ class WidgetOnDeviceTest {
         }
     }
 
+    private fun choose(
+        widget: PlacedWidget,
+        colors: WidgetColors,
+    ) = runBlocking {
+        // What the setup screen does when it is done.
+        val glanceId = GlanceAppWidgetManager(app).getGlanceIdBy(widget.id)
+        updateAppWidgetState(app, glanceId) { WidgetStyle(colors = colors).writeTo(it) }
+        app.widgetRefresher.invalidate()
+        app.widgetRefresher.drawNow(widget.id)
+    }
+
+    @Test
+    fun `changing the colour twice in a row shows both at once`() {
+        save(total = 30)
+        PlacedWidget(UrlaubsplanerWidgetReceiver::class.java).use { widget ->
+            app.widgetRefresher.start()
+            val number = number(30.0)
+            widget.awaitText(number)
+
+            choose(widget, WidgetColors.LIGHT)
+            Thread.sleep(SETTLE_MILLIS)
+            val light = widget.awaitColor(number) { true }
+
+            choose(widget, WidgetColors.DARK)
+            widget.awaitColor(number) { it != light }
+
+            // The second change within the minute Glance keeps its session: it used to show late.
+            choose(widget, WidgetColors.LIGHT)
+            widget.awaitColor(number) { it == light }
+        }
+    }
+
     @Test
     fun `the app knows that a widget is placed`() {
         PlacedWidget(UrlaubsplanerBigWidgetReceiver::class.java).use {
             assertTrue(app.widgetRefresher.hasWidgets())
         }
+    }
+
+    private companion object {
+        const val SETTLE_MILLIS = 1_000L
     }
 }
