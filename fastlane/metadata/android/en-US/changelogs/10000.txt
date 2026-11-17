@@ -1,0 +1,1 @@
+New: the stable version 1.0. A long press on the app icon offers three shortcuts: Calendar, Year view and Add today. The app is much smaller (about 5 instead of 30 MB) and starts faster. A changed widget colour shows at once. The licence is now GPL-3.0 or later. Updating from 0.11.x: your data and the backup file stay unchanged.

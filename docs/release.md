@@ -178,7 +178,7 @@ Quick Start Guide). `f-droid.org` itself is not reachable from the cloud, `gitla
 
 **What is ready in this repo** (`fastlane/metadata/android/`): `de-DE` and `en-US` with `title.txt`,
 `short_description.txt` (under 80 characters, no trailing dot), `full_description.txt`,
-`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100, 1101), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
+`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100, 1101, 10000), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
 F-Droid requires `en-US`; `de-DE` is extra. Descriptions use only the HTML tags F-Droid allows.
 
 **What F-Droid checks**: free licence (GPL-3.0-or-later), only free dependencies and tools (no Google Play
@@ -255,6 +255,31 @@ Decided "decide later" (the maintainer, 2026-10-26): **not registered now.** Fac
   account is free and allows up to 20 devices (enough for the maintainer's own phone).
 - There is a route for open-source apps: register the package name `de.remph.urlaubsplaner` with the
   signing key's SHA-256. F-Droid re-signs with its own key, so its fingerprint has to be added too.
+
+**Checked again 2026-11-17 (before the 1.0.0 tag)**, on developer.android.com (landing page, FAQ,
+limited-distribution and open-source-registration guides); nothing that changes the plan:
+
+- Dates unchanged: protections began on 30 September 2026 for installs from the participating stores
+  (Play, Galaxy Store, HONOR, OPPO, vivo, Xiaomi GetApps, Palm Store) in Brazil, Indonesia, Singapore
+  and Thailand; "verification capability will be expanded globally for all apps on certified Android
+  devices in 2027". No page names Germany or the EU, and no date for them.
+- FAQ answer, last updated 2026-07-15: if you distribute through other stores or users sideload the
+  app, "these new verification requirements won't apply to your app yet". ADB installs are exempt. The
+  limited-distribution page words the 30 September date more broadly ("package names not registered by
+  this date will no longer be installable ... in those regions"); the FAQ's store-only wording is the one
+  that says who is affected.
+- Accounts as before: full distribution $25 and an ID (the fee is waived for those who qualify for
+  limited distribution); limited distribution is free, no ID, Google account with 2-step verification
+  and a payments profile, now available. Its device cap is still 20 on the FAQ, guides table and
+  landing page, and 50 on the limited-distribution page.
+- Unverified apps can still be installed with the advanced flow (developer mode, one-day wait, then
+  biometrics or PIN) or ADB; updates of an unregistered app fail when the flow is off.
+- Open-source route unchanged: register the package name and the signing key's SHA-256 in the Android
+  Developer Console (verified account needed), `adi-registration.properties` in `assets`; optional
+  ("you don't have to register your app in order to continue distributing them on open-source repositories").
+
+So 1.0.0 on GitHub (sideloaded APK) is not affected yet and needs no registration. The decision below
+is still the maintainer's, still due before 2027.
 
 **To do before 2027:** read Google's pages again (the rules were still moving), then decide:
 register the package name through the open-source route, take the limited distribution account, or
