@@ -87,7 +87,10 @@ class ShortcutsOnDeviceTest {
                 .manifestShortcuts
                 .map { it.id }
 
-        assertEquals(listOf("calendar", "year", "mark_today"), ids)
+        // A set, not a list: the launcher decides the order (Android 17 returns it reversed). The
+        // size check keeps a duplicate from hiding behind the set.
+        assertEquals(setOf("calendar", "year", "mark_today"), ids.toSet())
+        assertEquals(3, ids.size)
     }
 
     @Test
