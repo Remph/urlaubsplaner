@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Remph
+
 package de.remph.urlaubsplaner.core.schoolholidays
 
 import de.remph.urlaubsplaner.core.holidays.Bundesland

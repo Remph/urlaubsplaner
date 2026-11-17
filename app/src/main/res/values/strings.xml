@@ -343,7 +343,7 @@
     <string name="about_website">Webseite</string>
     <string name="about_source">Quellcode</string>
     <string name="about_licence">Lizenz der App</string>
-    <string name="about_licence_value">GPL-3.0, freie Software</string>
+    <string name="about_licence_value">GPL-3.0 oder neuer, freie Software</string>
     <string name="about_data_title">Schulferiendaten</string>
     <string name="about_libraries_title">Bibliotheken</string>
     <string name="about_libraries_body">AndroidX (Compose, Room, Glance und weitere), Kotlin und kotlinx stehen unter der Apache-Lizenz 2.0. Das Widget bringt Protocol Buffers mit (BSD-3-Clause).</string>

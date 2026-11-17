@@ -501,7 +501,7 @@ the widget, a real launcher's resizing, and TalkBack.
 Last row of Einstellungen ("Über die App" / "About"), one page: app name and version (from the
 manifest), one sentence that the data stays on the phone (the app declares no INTERNET
 permission), "© 2026 Remph" with the no-warranty sentence the GPL asks for, links to the source
-(`SOURCE_URL`) and to the maintainer's website (`WEBSITE_URL`, both open the browser), the GPL-3.0 licence, the
+(`SOURCE_URL`) and to the maintainer's website (`WEBSITE_URL`, both open the browser), the GPL-3.0-or-later licence (since 1.0.0; the full GPL-3.0 text is what the dialog shows), the
 OpenHolidays credit (`SchoolHolidayData.CREDIT`, English as the licence asks), a line on the
 libraries and three licence texts shown in a dialog. The texts live in `app/src/main/assets/licenses/`
 (GPL-3.0, Apache-2.0, BSD-3-Clause for the Protocol Buffers copy inside Glance), so they travel
@@ -599,7 +599,7 @@ performance and feel review of 0.10.0 (2026-10-31). Fixes only, no stored data c
   what it removed, `PlannerViewModel.removed` hands it to `AppRoot`, whose snackbar ("3 Tage
   entfernt", Rückgängig) calls `restore` with each day's mark and granted flag. Marking says nothing.
 
-Left for later: R8 (1.0.0), an app baseline profile and holding the splash until the data is read
+Left for later: an app baseline profile (R8 is on since 1.0.0, see `docs/release.md`) and holding the splash until the data is read
 (both need a measurement on the PC).
 
 Known snags:

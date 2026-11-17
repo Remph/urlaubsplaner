@@ -32,7 +32,7 @@ Database Licence (ODbL)."
 Reading of the licence text (not legal advice):
 
 - The bundled file is a Derivative Database (a substantial part of the contents, reformatted), and
-  the app is published. So the file stays under ODbL (section 4.4), also in the repo. The GPL-3.0
+  the app is published. So the file stays under ODbL (section 4.4), also in the repo. The GPL-3.0-or-later
   code is a separate work: ODbL does not cover computer programs (section 2.3 a).
 - The file sits in its own directory with a copy of the ODbL text (or its URI) and the notices
   kept intact (section 4.2). The file is committed to the public repo, which also covers the

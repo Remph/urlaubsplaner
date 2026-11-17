@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Remph
+
 package de.remph.urlaubsplaner.ui
 
 import androidx.compose.animation.AnimatedContent
