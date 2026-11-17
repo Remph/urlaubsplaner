@@ -80,14 +80,69 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 (`apksigner` is in the Android SDK's `build-tools` folder.) The SHA-256 line must be the
 fingerprint written down above. Do not put the APK in git (`*.apk` is ignored).
 
-### R8 (code shrinking) is off
+### R8 (code shrinking) is on
 
-`isMinifyEnabled` is `false` for 0.9.0. Tried in the cloud on 2026-10-26: with R8 the release APK
-drops from about 30 MB to about 5.4 MB and the build passes, but Room, Glance, WorkManager and
-kotlinx-serialization reach classes by reflection and the cloud has no emulator, so a shrunk APK
-was never run. To turn it on later, do it in its own PR and test the release APK on a phone: open
-the app, mark days, export and **import a backup**, add both widgets and let them update, change
-the language. Missing rules go into a new `app/proguard-rules.pro` (not there yet).
+Since 1.0.0 the release build runs R8 (`isMinifyEnabled`, `isShrinkResources`, the default optimize
+rules and `app/proguard-rules.pro`). Debug builds stay unshrunk. Numbers (cloud, 2026-11-16): the
+release APK is about 5.0 MB instead of 30.5 MB; the build has no missing-class warnings.
+
+What was checked without a device (2026-11-16): the libraries bring their own keep rules (Room's
+`RoomDatabase` constructors, WorkManager's workers, Glance's `ActionCallback`s and protobuf, lifecycle
+and DataStore); every class the merged manifest names (activities, both widget receivers, Glance's
+and WorkManager's services and receivers, `FileProvider`) is in the shrunk dex under its own name;
+the app has no reflection of its own (no `Class.forName`, no `@Serializable` classes: the backup
+reads and writes a `JsonElement` tree, resources are not looked up by name). That was not enough:
+the first emulator run (2026-11-17, update over 0.11.1) left both widgets on the loading spinner,
+because WorkManager makes its `InputMerger` with `Class.newInstance()` and R8 removed the
+no-argument constructor that WorkManager's own rule does not keep. `app/proguard-rules.pro` now has
+that one rule, and `-keepattributes SourceFile,LineNumberTable` with `-renamesourcefileattribute
+SourceFile` for line numbers in stack traces. A library's missing rule shows only at run time, so
+the test below is what counts, not this static check.
+
+A second look at the libraries' sources (2026-11-17, every `Class.forName` and `newInstance` in
+WorkManager 2.7.1, Room, lifecycle, savedstate, startup, AppCompat, activity, core, window and
+DataStore) found no further gap: Room's `_Impl` classes, WorkManager's workers, the `androidx.startup`
+initializers and the ViewModel constructors are covered by the libraries' own rules, the app's
+ViewModels are made by a lambda, and the rest reflects on Android's own classes or on classes the app
+does not have (the GCM scheduler, multi-process WorkManager, activity embedding). Read the sources
+again when a library is added or updated. A kept class does not keep its constructor: check a
+constructor with `dexdump -d classes.dex` (in the SDK's `build-tools`) on the unzipped release APK.
+
+Why the instrumented tests stay on the debug build: they are in-process tests that call the app's
+classes by name (`VacationCalculator`, `SchoolHolidayAsset`, `FormatsKt`, ...) and Compose's test
+library reaches into Compose's runtime internals. R8 removes or renames both, so the test APK would
+fail with `NoClassDefFoundError`; keeping them would mean keeping nearly everything and testing a
+build that is no longer the shrunk one (tried 2026-11-16 with a second build type, thrown away).
+The shrunk APK is tested from the outside instead, as below.
+
+**Test of a shrunk APK** (on the PC, after every change to the rules, to a dependency or to R8
+itself; the maintainer's signing key from `keystore.properties` makes `./gradlew assembleRelease`
+installable). On both emulators (API 30 and 37) and, with the maintainer's OK, the phone:
+
+1. Install over the previous release (0.11.1) with data and a placed widget, update with
+   `adb install -r`: the data is still there, the widget is redrawn.
+2. First start, choose a Land, enter the entitlement, mark days (tap and drag), bridge days,
+   year and month view, the language (Deutsch, English, system).
+3. Widget, small and big: place both, change the colour twice, mark a day (the widget follows),
+   rotate the phone.
+4. Backup: export a file, delete some days, import the file, check the days and the widget.
+5. Calendar export (ICS): save the file, "In Kalender öffnen".
+6. Einstellungen > Über die App: the three licence texts open, the credits are there.
+7. Tablet profile (smallest width 600 dp): rotate.
+8. `adb logcat` during all of it, filtered on the app's process: no `FATAL EXCEPTION`, no
+   `ClassNotFoundException`, `NoClassDefFoundError`, `NoSuchMethodException`,
+   `NoSuchFieldException` or `Resources$NotFoundException` (the last one is what the resource
+   shrinker causes when it drops something that is looked up at run time).
+
+**Reading a crash from a shrunk build.** A stack trace shows short names (`a.b.c`). Save the
+`app/build/outputs/mapping/release/mapping.txt` of every released APK (it is not in git: it is
+large, about 45 MB; a rebuild of the tag normally gives the same file, but do not rely on it), then
+
+```
+retrace mapping.txt trace.txt
+```
+
+(`retrace` is in the Android SDK's `cmdline-tools/latest/bin`.)
 
 ## Before a release: test on the phone
 
@@ -95,7 +150,8 @@ The standard check (`./gradlew lint test assembleDebug spotlessCheck`) is not en
 the instrumented tests (`connectedDebugAndroidTest`, on both emulators, not the phone) and the widget cannot run in the cloud. Install the signed
 release APK on the phone (the debug build has its own application ID `de.remph.urlaubsplaner.debug`, so it can stay installed next to it) and walk through: first
 start, choose a Land, enter the entitlement, mark days, bridge days, widget (small and big),
-backup export and import, calendar export, German and English, dark mode.
+backup export and import, calendar export, German and English, dark mode. The release APK is
+shrunk by R8: "Test of a shrunk APK" above is the full list.
 
 ## Making a release (checklist)
 
@@ -103,7 +159,10 @@ backup export and import, calendar export, German and English, dark mode.
    `app/build.gradle.kts`, adds `fastlane/metadata/android/de-DE/changelogs/<versionCode>.txt` and
    the same for `en-US` (at most 500 characters), and updates the screenshots and the school holiday
    file if they changed. The maintainer merges it after the review.
-2. Build the signed APK on the PC and test it (above).
+2. Build the signed APK on the PC and test it (above, including "Test of a shrunk APK"). Keep
+   `app/build/outputs/mapping/release/mapping.txt` of exactly that build, named after the version
+   (for example `mapping-1.0.0.txt`), outside git: without it a crash report from a user cannot be
+   read.
 3. Tag the merge commit **`v<versionName>`**, for example `v0.9.0`, and push the tag. F-Droid
    builds from tags: the tag must be on the commit that has that `versionCode`.
 4. A **GitHub release** with the signed APK attached, only when the maintainer asks. Name the file
@@ -122,7 +181,7 @@ Quick Start Guide). `f-droid.org` itself is not reachable from the cloud, `gitla
 `changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100, 1101), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
 F-Droid requires `en-US`; `de-DE` is extra. Descriptions use only the HTML tags F-Droid allows.
 
-**What F-Droid checks**: free licence (GPL-3.0), only free dependencies and tools (no Google Play
+**What F-Droid checks**: free licence (GPL-3.0-or-later), only free dependencies and tools (no Google Play
 Services: the dependency audit in the about screen thread found only Apache-2.0 and BSD-3), no
 tracking or ads (the app has no INTERNET permission), tag per release, and that the app builds from
 source with their tools. The school holiday data is ODbL and sits in its own directory with the
@@ -152,7 +211,7 @@ which needs `fdroidserver` on a PC or in the fork's pipeline):
 ```yaml
 Categories:
   - Calendar & Agenda
-License: GPL-3.0-only
+License: GPL-3.0-or-later
 AuthorName: Remph
 SourceCode: https://github.com/Remph/urlaubsplaner
 IssueTracker: https://github.com/Remph/urlaubsplaner/issues
@@ -175,8 +234,9 @@ CurrentVersionCode: 901
 ```
 
 `AuthorName` is public: the maintainer chose the GitHub name Remph (2026-10-26). `License` is
-`GPL-3.0-only` because the project says "GPL-3.0" and no source file carries an "or any later
-version" notice; if the maintainer means "or later", change it here and add the notice to the sources. Likely
+`GPL-3.0-or-later`: the maintainer chose "or later" on 2026-11-16, and every source file carries the
+SPDX line (`gradle/license-header.txt`), so the three places (`LICENSE` and file headers, about
+screen and README, this metadata) say the same. Likely
 questions from the build: the JDK of F-Droid's build server against the one in `gradle/` (the project
 builds on JDK 17 and newer), whether it can fetch the Gradle version of the wrapper, and whether its
 Android SDK has platform 37 (`compileSdk` and `targetSdk` are 37, very new, not checked against

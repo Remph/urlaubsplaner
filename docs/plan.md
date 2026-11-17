@@ -518,7 +518,7 @@ the widget, a real launcher's resizing, and TalkBack.
 Last row of Einstellungen ("Über die App" / "About"), one page: app name and version (from the
 manifest), one sentence that the data stays on the phone (the app declares no INTERNET
 permission), "© 2026 Remph" with the no-warranty sentence the GPL asks for, links to the source
-(`SOURCE_URL`) and to the maintainer's website (`WEBSITE_URL`, both open the browser), the GPL-3.0 licence, the
+(`SOURCE_URL`) and to the maintainer's website (`WEBSITE_URL`, both open the browser), the GPL-3.0-or-later licence (since 1.0.0; the full GPL-3.0 text is what the dialog shows), the
 OpenHolidays credit (`SchoolHolidayData.CREDIT`, English as the licence asks), a line on the
 libraries and three licence texts shown in a dialog. The texts live in `app/src/main/assets/licenses/`
 (GPL-3.0, Apache-2.0, BSD-3-Clause for the Protocol Buffers copy inside Glance), so they travel
@@ -616,7 +616,7 @@ performance and feel review of 0.10.0 (2026-10-31). Fixes only, no stored data c
   what it removed, `PlannerViewModel.removed` hands it to `AppRoot`, whose snackbar ("3 Tage
   entfernt", Rückgängig) calls `restore` with each day's mark and granted flag. Marking says nothing.
 
-Left for later: R8 (1.0.0), an app baseline profile and holding the splash until the data is read
+Left for later: an app baseline profile (R8 is on since 1.0.0, see `docs/release.md`) and holding the splash until the data is read
 (both need a measurement on the PC).
 
 Known snags:
@@ -664,6 +664,52 @@ saved. A quiet reminder, no notification and no new permission:
   install, where restoring is the first step).
 - Wording is in `strings.xml` (`backup_hint_*`, `backup_last`, `backup_never`); the two day counts
   are `BackupReminder.OLD_AFTER_DAYS` and `FIRST_HINT_AFTER_DAYS`.
+
+### App shortcuts (1.0.0, parked item 30)
+
+A long press on the app icon offers three shortcuts, the maintainer's choice of 2026-11-16, in this
+order: **Kalender**, **Jahresansicht** and **Heute eintragen** (English: Calendar, Year view, Add today).
+Each ends in the same screen from a cold start and from a running app, whatever the user had open:
+
+- **Kalender:** the Kalender tab, month view, the current month.
+- **Jahresansicht:** the Kalender tab, year view, the current year.
+- **Heute eintragen:** the Kalender tab, month view, the current month, with the day sheet open for
+  today (the usual sheet: whole or half day, "Bis", Eintragen). A weekend or a holiday shows the
+  sheet's facts and no button, as for any such day; before a Land is chosen there is no sheet, only
+  the calendar's note that points to the settings.
+
+How it is built:
+
+- Static shortcuts in `res/xml/shortcuts.xml`, announced by the `android.app.shortcuts` meta-data on
+  `MainActivity`. They exist right after the install and need no code or permission.
+- Each shortcut's intent has only an action (`de.remph.urlaubsplaner.action.SHORTCUT_MONTH`, `_YEAR`,
+  `_MARK_TODAY`), like the widget's taps. `TabRequest.from` turns it into a request for the calendar
+  tab plus a `CalendarShortcut`; `AppRoot` shows the tab and calls `PlannerViewModel.openShortcut`,
+  which reads the date again (an app that stayed in memory overnight), sets mode and month and, for
+  "Heute eintragen", sets `dayToMarkRequest`. `CalendarScreen` takes that request at once and opens
+  the sheet, so a later visit to the tab does not open it again. `MainActivity` is `singleTask`:
+  a running app gets the shortcut in `onNewIntent`, a new start in `onCreate` (only at a real start,
+  not after a rotation).
+- `targetPackage` is written out in `res/xml/shortcuts.xml`, not a `@string/...` reference: the launcher
+  service reads the attribute raw, so a reference makes it start a package called `@2131689790`
+  ("Diese App kann nicht geöffnet werden"; found on the phone, 2026-11-17). The debug build has the
+  application ID `de.remph.urlaubsplaner.debug`, and a static shortcut whose package differs from
+  the app's own is dropped without a message, so `src/debug/res/xml/shortcuts.xml` is a copy of the
+  file with the debug ID. `ShortcutsTest` reads the raw attribute and compares it with the real
+  package name.
+- Icons: adaptive icons in the app icon's teal with a white glyph (calendar page, twelve month
+  tiles, calendar page with a plus), so they read the same on a light and a dark launcher. Preview:
+  `design/1.0.0/shortcuts/` in the project folder.
+- Labels are German first and English second. Long labels stay within the 25 characters that Android
+  documents (`ShortcutsTest`); the short ones are a little over the 10 that it recommends
+  ("Jahresansicht", "Heute eintragen"), which launchers shorten or wrap.
+- The labels are resolved by the launcher from the app's resources, so they probably follow the
+  system language, not the language chosen in the app's settings (not tried; the screen they open
+  is in the app's language). Following the in-app choice would need dynamic shortcuts that the app
+  renews at each language change; not done.
+- Not on a phone yet: how the launcher of the maintainer's phone shows them (order, icon shape, label
+  length), and a start of each shortcut from a cold app. The instrumented test
+  (`ShortcutsOnDeviceTest`) starts each shortcut's intent on an emulator.
 
 ## Status
 

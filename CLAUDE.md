@@ -19,7 +19,10 @@ Local-first, no backend for the MVP. Gradle with `:core` and `:app`; the MVP fea
 
 ## Decided (design decisions, 2026-10-25)
 - Stack: Kotlin, Jetpack Compose with Material 3, Room.
-- Licence of the app source: GPL-3.0.
+- Licence of the app source: GPL-3.0-or-later (maintainer, 2026-11-16, parked 14; first decided as
+  "GPL-3.0" on 2026-10-25). Every source file starts with the two SPDX/copyright lines in
+  `gradle/license-header.txt`; `spotlessApply` adds them to Kotlin files and `spotlessCheck` fails
+  without them. Add them by hand to new `*.gradle.kts` and Python files.
 - Package name (application ID): `de.remph.urlaubsplaner`. Permanent, do not change it.
 - App name (label): Urlaubsplaner. Only a string resource, easy to change.
 - Holiday data: public holidays are computed by rules in `:core` (Easter rule plus Länder tables,

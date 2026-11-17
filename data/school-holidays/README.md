@@ -11,7 +11,7 @@ available here under the Open Database License (ODbL).
 
 The file is a derivative database of the OpenHolidays data (a reformatted, filtered extract), so it
 stays under the ODbL 1.0: the full text is in `ODbL-1.0.md`. The licence applies to the data in
-this directory only; the app's source code is GPL-3.0 (see `LICENSE` in the repo root). Anything
+this directory only; the app's source code is GPL-3.0-or-later (see `LICENSE` in the repo root). Anything
 added to the file by hand must be ODbL compatible. Notes on the licence: `docs/data-sources.md`.
 
 ## What is in the file

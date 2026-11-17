@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Remph
+
 package de.remph.urlaubsplaner.core.holidays
 
 /** The 16 Bundesländer. [code] is the official two-letter abbreviation, used for storage. */

@@ -27,6 +27,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The three shortcuts on a long press of the icon (Kalender, Jahresansicht, Heute
+                 eintragen). Static, so they exist at once after the install and need no code. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- Setup screen of the home screen widget; Android starts it, so it has this one filter.
