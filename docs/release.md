@@ -91,9 +91,13 @@ What was checked without a device (2026-11-16): the libraries bring their own ke
 and DataStore); every class the merged manifest names (activities, both widget receivers, Glance's
 and WorkManager's services and receivers, `FileProvider`) is in the shrunk dex under its own name;
 the app has no reflection of its own (no `Class.forName`, no `@Serializable` classes: the backup
-reads and writes a `JsonElement` tree, resources are not looked up by name). So the app needs only
-two lines of its own: `-keepattributes SourceFile,LineNumberTable` and `-renamesourcefileattribute
-SourceFile`, which keep line numbers in stack traces.
+reads and writes a `JsonElement` tree, resources are not looked up by name). That was not enough:
+the first emulator run (2026-11-17, update over 0.11.1) left both widgets on the loading spinner,
+because WorkManager makes its `InputMerger` with `Class.newInstance()` and R8 removed the
+no-argument constructor that WorkManager's own rule does not keep. `app/proguard-rules.pro` now has
+that one rule, and `-keepattributes SourceFile,LineNumberTable` with `-renamesourcefileattribute
+SourceFile` for line numbers in stack traces. A library's missing rule shows only at run time, so
+the test below is what counts, not this static check.
 
 Why the instrumented tests stay on the debug build: they are in-process tests that call the app's
 classes by name (`VacationCalculator`, `SchoolHolidayAsset`, `FormatsKt`, ...) and Compose's test
