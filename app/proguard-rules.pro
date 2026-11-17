@@ -10,3 +10,7 @@
 # turns it back into readable code. The mapping.txt of every released APK is kept (docs/release.md).
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# WorkManager creates its InputMerger by reflection (Class.newInstance) and R8 drops the
+# no-argument constructor otherwise: Glance's workers then fail and widgets stay on the spinner.
+-keep class * extends androidx.work.InputMerger { <init>(); }
