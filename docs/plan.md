@@ -63,7 +63,9 @@ After 0.9.x: the features of 0.10.0 (parked items 18 to 23) are built on the int
 
 After 0.10.x: 0.11.0 (the visible features: legend, Kalender tab, portrait on phones, pager swipe,
 backup reminder, range picker and drag to mark) is built on `release/0.11.0`, planned in
-`docs/milestone-0.11.0.md`. 1.0.0 follows as the stable release; its candidates are listed there.
+`docs/milestone-0.11.0.md`. 1.0.0 is the stable release after it (R8, baseline profile, app shortcuts,
+GPL-3.0-or-later, widget colour fix): its scope is the "After 0.11.0" list in that file; no Room or
+backup change (database version 4, backup format unchanged).
 
 Language (the maintainer, 2026-10-25): the app language is a setting, not only the system language: System
 (default), Deutsch, English. If the system language is neither, German applies (the default
@@ -616,8 +618,8 @@ performance and feel review of 0.10.0 (2026-10-31). Fixes only, no stored data c
   what it removed, `PlannerViewModel.removed` hands it to `AppRoot`, whose snackbar ("3 Tage
   entfernt", Rückgängig) calls `restore` with each day's mark and granted flag. Marking says nothing.
 
-Left for later: an app baseline profile (R8 is on since 1.0.0, see `docs/release.md`) and holding the splash until the data is read
-(both need a measurement on the PC).
+Left for later: holding the splash until the data is read (needs a measurement on the PC). R8 and the app
+baseline profile are in since 1.0.0 (`docs/release.md`, `docs/baseline-profile.md`).
 
 Known snags:
 
@@ -724,3 +726,4 @@ How it is built:
 - [x] 0.10.1 performance and feel fixes (`feature/0-10-1-perf-feel`, PR #56, merged 2026-10-31)
 - [x] 0.11.0 (the visible features) built on `release/0.11.0`: backup reminder (PR #58), range picker for "Bis" (PR #59), legend in the year view, second tap on Kalender, portrait on phones (PR #60), debug application ID suffix (PR #61), calendar pager (PR #62), expanded year rows fill the screen (PR #63), drag to mark a range (PR #64); release PR `feature/0-11-release`
 - [x] 0.11.1 fixes: tap on the open Einstellungen tab goes back to the list (PR #69), widgets redraw by the system's ids and the widget receivers are not exported (PR #70, parked 7 and 11); release PR `feature/release-0-11-1`
+- [x] 1.0.0 stable release built on `release/1.0.0`: GPL-3.0-or-later and licence headers (PR #73), R8 (PR #75), app shortcuts (PR #76), widget colour drawn without a Glance session (PR #74), baseline profile (PR #77); release PR `feature/release-1-0-0` (version 1.0.0, versionCode 10000, changelogs), then `release/1.0.0` into `main`
