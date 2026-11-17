@@ -9,7 +9,7 @@ import org.junit.Test
 
 /**
  * Records which classes and methods the journey uses and writes them to the baseline profile
- * (docs/baseline-profile.md: `./gradlew :app:generateBaselineProfile` with a device attached).
+ * (docs/baseline-profile.md: `./gradlew :app:generateReleaseBaselineProfile` with a device attached).
  * The startup profile part is what the cold start reads first.
  */
 class BaselineProfileGenerator {
