@@ -599,7 +599,7 @@ performance and feel review of 0.10.0 (2026-10-31). Fixes only, no stored data c
   what it removed, `PlannerViewModel.removed` hands it to `AppRoot`, whose snackbar ("3 Tage
   entfernt", Rückgängig) calls `restore` with each day's mark and granted flag. Marking says nothing.
 
-Left for later: R8 (1.0.0), an app baseline profile and holding the splash until the data is read
+Left for later: an app baseline profile (R8 is on since 1.0.0, see `docs/release.md`) and holding the splash until the data is read
 (both need a measurement on the PC).
 
 Known snags:

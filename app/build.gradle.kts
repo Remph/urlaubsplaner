@@ -70,10 +70,14 @@ android {
         }
         release {
             signingConfig = signingConfigs.findByName("release")
-            // R8 stays off for 0.9.0: Room, Glance, WorkManager and kotlinx-serialization reach
-            // classes by reflection, and there is no emulator in the cloud to test a shrunk APK.
-            // docs/release.md has the numbers and what to test before turning it on.
-            isMinifyEnabled = false
+            // R8 shrinks, optimises and obfuscates the code, and the resource shrinker drops what
+            // is unused: the APK goes from about 30 MB to about 5 MB and Compose runs optimised.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 
