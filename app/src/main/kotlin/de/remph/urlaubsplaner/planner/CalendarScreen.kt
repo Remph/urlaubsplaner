@@ -106,6 +106,20 @@ fun CalendarScreen(
     var sheetDate by rememberSaveable { mutableStateOf<LocalDate?>(null) }
     // The last day of the run when the sheet was opened by dragging across days; the day itself otherwise.
     var sheetEnd by rememberSaveable { mutableStateOf<LocalDate?>(null) }
+    // The "mark today" shortcut asks for the day sheet. It is taken at once, so it opens once and
+    // the calendar does not open it again at a later visit. Before the Land is chosen (or while the
+    // view is still loading) there is no sheet to open: the empty state below points to the settings.
+    val dayToMark by viewModel.dayToMarkRequest.collectAsStateWithLifecycle()
+    val hasLand = view?.hasLand
+    LaunchedEffect(dayToMark, hasLand) {
+        val day = dayToMark ?: return@LaunchedEffect
+        if (hasLand == null) return@LaunchedEffect
+        viewModel.dayToMarkTaken()
+        if (hasLand) {
+            sheetDate = day
+            sheetEnd = day
+        }
+    }
     // A highlight is for the moment the calendar opens: it goes when another month is shown and
     // when the screen leaves, so a later visit does not light up an old day.
     LaunchedEffect(highlight, month) {

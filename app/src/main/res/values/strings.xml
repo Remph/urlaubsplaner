@@ -141,6 +141,15 @@
     <string name="nav_calendar_this_year">Zum aktuellen Jahr</string>
     <string name="back">Zurück</string>
 
+    <!-- Launcher shortcuts (long press on the app icon). Short labels fit under an icon pinned to
+         the home screen; the long ones say more where the launcher has room. -->
+    <string name="shortcut_month_short">Kalender</string>
+    <string name="shortcut_month_long">Kalender öffnen</string>
+    <string name="shortcut_year_short">Jahresansicht</string>
+    <string name="shortcut_year_long">Jahresansicht öffnen</string>
+    <string name="shortcut_today_short">Heute eintragen</string>
+    <string name="shortcut_today_long">Heute eintragen</string>
+
     <!-- Einstellungsliste -->
     <string name="settings_vacation_title">Urlaub %1$d</string>
     <string name="vacation_not_entered">Noch nicht eingetragen</string>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcut "Kalender": a calendar page with its days. Adaptive icon layer, 108dp
+     canvas; everything stays inside the 66dp safe zone around the centre (54,54). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- The page: header band, then the frame of the days. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,40 H70 A4,4 0 0 1 74,44 V52 H34 V44 A4,4 0 0 1 38,40 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M35.5,52 V70 A2.5,2.5 0 0 0 38,72.5 H70 A2.5,2.5 0 0 0 72.5,70 V52" />
+    <!-- The two rings. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M44,35 V43 M64,35 V43" />
+    <!-- Six days. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,56 H46 V61 H40 Z M51,56 H57 V61 H51 Z M62,56 H68 V61 H62 Z M40,64 H46 V69 H40 Z M51,64 H57 V69 H51 Z M62,64 H68 V69 H62 Z" />
+</vector>
