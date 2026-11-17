@@ -11,9 +11,10 @@ of 2026-11-16 and 2026-10-31 in `docs/plan.md`).
 - `app/src/release/generated/baselineProfiles/baseline-prof.txt` and `startup-prof.txt`: the
   committed profile (plain text, generated, do not edit by hand). The build turns it into the
   binary profile in the APK, after R8 has renamed the classes. A normal build, F-Droid's included,
-  only reads these files: it needs no device and no extra step. `startup-prof.txt` holds only what
-  the cold start touches (it orders the classes in the dex files), `baseline-prof.txt` everything
-  the journey touched, the startup part included.
+  only reads these files: it needs no device and no extra step. The two files are identical:
+  the generator records the whole journey as the startup profile too (`includeInStartupProfile`),
+  so R8 orders the classes of the whole journey first in the dex files. A startup profile of only
+  the cold start would order them tighter; not tried, the measured gain (below) is already there.
 - `baselineprofile/` (module `:baselineprofile`): the journey that is recorded
   (`Journey.kt`), the generator (`BaselineProfileGenerator`) and the measurement
   (`StartupBenchmark`). It is test code: nothing of it ends up in the app. `-PcoreOnly` skips it
