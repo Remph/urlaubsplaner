@@ -92,18 +92,29 @@ private fun MacrobenchmarkScope.browseCalendar() {
  * date as a content description, which is how they are told from the other buttons.
  */
 private fun MacrobenchmarkScope.markADay() {
+    // The tiles are not marked clickable for accessibility (they react to taps and drags through
+    // pointer input), so they are found by their description, which always contains the year
+    // ("Mittwoch, 18. November 2026").
+    val tileDescription = Pattern.compile(".*\\d{4}.*")
+
     fun dayTile(): UiObject2? {
         val top = device.displayHeight * 0.30
         val bottom = device.displayHeight * 0.65
+        // Compose redraws while the list is read; an object that went stale is simply skipped.
         return device
-            .findObjects(By.clickable(true))
+            .findObjects(By.desc(tileDescription))
             .firstOrNull { tile ->
-                val centre = tile.visibleCenter
-                !tile.contentDescription.isNullOrBlank() && centre.y in top.toInt()..bottom.toInt()
+                runCatching { tile.visibleCenter.y in top.toInt()..bottom.toInt() }
+                    .getOrDefault(false)
             }
     }
     dayTile()?.click()
     device.waitForIdle()
+    // The range picker (the "Until" row) is a heavy dialog: open it once and dismiss it.
+    if (click(Pattern.compile("^(?:Bis|Until): .*"))) {
+        device.pressBack()
+        device.waitForIdle()
+    }
     if (click(text("Eintragen", "Add"))) {
         dayTile()?.click()
         device.waitForIdle()
@@ -116,7 +127,8 @@ private fun MacrobenchmarkScope.visitSettings() {
     click(settings)
     val pages =
         listOf(
-            text("Urlaub", "Vacation"),
+            // The row carries the year ("Urlaub 2026").
+            Pattern.compile("^(?:Urlaub|Vacation) \\d{4}$"),
             text("Arbeitstage", "Working days"),
             text("Darstellung", "Appearance"),
             text("Datensicherung", "Backup"),
