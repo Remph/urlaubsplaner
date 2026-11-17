@@ -99,6 +99,15 @@ that one rule, and `-keepattributes SourceFile,LineNumberTable` with `-renamesou
 SourceFile` for line numbers in stack traces. A library's missing rule shows only at run time, so
 the test below is what counts, not this static check.
 
+A second look at the libraries' sources (2026-11-17, every `Class.forName` and `newInstance` in
+WorkManager 2.7.1, Room, lifecycle, savedstate, startup, AppCompat, activity, core, window and
+DataStore) found no further gap: Room's `_Impl` classes, WorkManager's workers, the `androidx.startup`
+initializers and the ViewModel constructors are covered by the libraries' own rules, the app's
+ViewModels are made by a lambda, and the rest reflects on Android's own classes or on classes the app
+does not have (the GCM scheduler, multi-process WorkManager, activity embedding). Read the sources
+again when a library is added or updated. A kept class does not keep its constructor: check a
+constructor with `dexdump -d classes.dex` (in the SDK's `build-tools`) on the unzipped release APK.
+
 Why the instrumented tests stay on the debug build: they are in-process tests that call the app's
 classes by name (`VacationCalculator`, `SchoolHolidayAsset`, `FormatsKt`, ...) and Compose's test
 library reaches into Compose's runtime internals. R8 removes or renames both, so the test APK would
