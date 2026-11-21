@@ -300,4 +300,20 @@ class IcsExportTest {
     fun `a short line is left alone`() {
         assertEquals("SUMMARY:Urlaub", IcsText.fold("SUMMARY:Urlaub"))
     }
+
+    @Test
+    fun `a trip whose end date cannot be written is left out instead of crashing`() {
+        // 9999-12-31 is a Friday; the event would end on 10000-01-01, which has five year digits.
+        val last = LocalDate.of(9999, 12, 31)
+        val marks = week() + (last to DayMark.FULL)
+
+        val text = export.encode(marks, IcsLanguage.GERMAN)
+
+        assertEquals(1, events(text).size)
+        assertTrue("DTSTART;VALUE=DATE:20270412" in lines(text))
+        assertEquals(1, export.tripCount(marks))
+        for (withStatus in listOf(true, false)) {
+            assertEquals(0, export.tripCount(MarkedDays(mapOf(last to DayMark.FULL)), withStatus))
+        }
+    }
 }

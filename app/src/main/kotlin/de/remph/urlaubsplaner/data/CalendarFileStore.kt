@@ -25,6 +25,7 @@ class CalendarFileStore(
         text: String,
     ) = withContext(Dispatchers.IO) {
         // "wt" truncates: with plain "w" some providers keep the tail of a longer old file.
+        requirePickerUri(uri, context.packageName)
         val output =
             context.contentResolver.openOutputStream(uri, "wt")
                 ?: throw FileNotFoundException("No stream for $uri")

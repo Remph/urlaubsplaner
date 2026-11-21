@@ -22,6 +22,7 @@ import de.remph.urlaubsplaner.core.settings.UserSettings
 import de.remph.urlaubsplaner.data.BackupFileStore
 import de.remph.urlaubsplaner.data.BackupStatusStore
 import de.remph.urlaubsplaner.data.CalendarFileStore
+import de.remph.urlaubsplaner.data.TestDocuments
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
 import de.remph.urlaubsplaner.data.UserDataRepository
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +68,7 @@ class SettingsViewModelTest {
 
     @Before
     fun open() {
+        TestDocuments.register()
         // Not reset afterwards: resetting while a late Room callback still runs fails, and the
         // ViewModels are cleared after each test anyway.
         Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -92,7 +94,7 @@ class SettingsViewModelTest {
         val viewModel =
             SettingsViewModel(
                 repository,
-                BackupFileStore(context.contentResolver),
+                BackupFileStore(context.contentResolver, context.packageName),
                 CalendarExporter(repository, CalendarFileStore(context), clock),
                 clock,
                 backupStatus,
@@ -114,7 +116,7 @@ class SettingsViewModelTest {
         await { it.settings.land == land }
     }
 
-    private val uri get() = Uri.fromFile(file)
+    private val uri get() = TestDocuments.uriFor(file)
 
     @Test
     fun `a fresh start has no Land, the current year and nothing to save`() {
@@ -512,7 +514,7 @@ class SettingsViewModelTest {
         val vm = viewModel()
         assertNull(vm.await().lastBackup)
 
-        vm.export(Uri.fromFile(File(file.parentFile, "no-such-folder/backup.json")))
+        vm.export(TestDocuments.uriFor(File(file.parentFile, "no-such-folder/backup.json")))
         vm.await { it.notice == Notice.ExportFailed }
         assertNull(backupStatus.state.value.lastBackup)
 
@@ -542,7 +544,7 @@ class SettingsViewModelTest {
     fun `an export to a place that cannot be written says so`() {
         val vm = viewModel()
 
-        vm.export(Uri.fromFile(File(file.parentFile, "no-such-folder/backup.json")))
+        vm.export(TestDocuments.uriFor(File(file.parentFile, "no-such-folder/backup.json")))
 
         vm.await { it.notice == Notice.ExportFailed }
     }
@@ -636,7 +638,7 @@ class SettingsViewModelTest {
     fun `a file that cannot be opened is unreadable, not a crash`() {
         val vm = viewModel()
 
-        vm.import(Uri.fromFile(File(file.parentFile, "gone.json")))
+        vm.import(TestDocuments.uriFor(File(file.parentFile, "gone.json")))
 
         assertEquals(Notice.ImportUnreadable, vm.await { it.notice != null }.notice)
     }

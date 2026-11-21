@@ -552,7 +552,7 @@ with the maintainer on 2026-10-27; the look was decided on 2026-10-26 (tinted fi
 - **Day sheet:** a "Genehmigt" switch (only for days after today, only with the setting on). It
   starts as the day's flag (off for a new mark) and applies to every day the sheet saves, so a
   "Bis" range is granted or planned together. Brückentage "Eintragen" marks as planned.
-- **Look:** `DayColors.granted` (`primaryContainer`; in the light theme mixed 20 % towards `primary` so it stands out from a plain tile, Nick 2026-10-27), `onGranted`, `grantedHalf` (the "½" keeps
+- **Look:** `DayColors.granted` (`primaryContainer`; in the light theme mixed 20 % towards `primary` so it stands out from a plain tile, the maintainer 2026-10-27), `onGranted`, `grantedHalf` (the "½" keeps
   the planned colour while it has 4.5:1 on the fill, else `onGranted`); 2 dp `primary` outline in
   the month, 1.5 dp in the year grid, no check or dot; legend entry "Genehmigt"; TalkBack says
   "Urlaub genehmigt" / "Halber Urlaubstag genehmigt". Tests in `DayColorsTest` (contrast, differs

@@ -319,8 +319,8 @@ class BackupFileTest {
     }
 
     @Test
-    fun `years that are not four digits are damaged, not stored`() {
-        for (year in listOf("-1", "10000", "999999999", "2147483647")) {
+    fun `years outside 1900 to 2999 are damaged, not stored`() {
+        for (year in listOf("-1", "0", "1899", "3000", "10000", "999999999", "2147483647")) {
             refused<BackupException.Damaged>(withEdit("\"year\": 2026", "\"year\": $year"))
         }
         for (date in listOf(
@@ -328,12 +328,50 @@ class BackupFileTest {
             "-999999999-01-01",
             "+10000-01-01",
             "-0001-12-31",
+            "0000-01-01",
+            "1899-12-31",
+            "3000-01-01",
+            "9999-12-31",
         )) {
             refused<BackupException.Damaged>(withEdit("\"2026-07-01\"", "\"$date\""))
         }
         // The edges of the range are fine.
-        BackupFile.decode(withEdit("\"year\": 2026", "\"year\": 9999"))
-        BackupFile.decode(withEdit("\"2026-07-01\"", "\"9999-12-31\""))
+        BackupFile.decode(withEdit("\"year\": 2026", "\"year\": 1900"))
+        BackupFile.decode(withEdit("\"year\": 2026", "\"year\": 2999"))
+        BackupFile.decode(withEdit("\"2026-07-01\"", "\"1900-01-01\""))
+        BackupFile.decode(withEdit("\"2026-07-01\"", "\"2999-12-31\""))
+    }
+
+    @Test
+    fun `a file with no working day is damaged, the screens keep at least one`() {
+        val e =
+            refused<BackupException.Damaged>(
+                withEdit("[\"MONDAY\", \"TUESDAY\", \"THURSDAY\"]", "[]"),
+            )
+        assertTrue(e.message!!.contains("workingDays"))
+        // One is enough.
+        BackupFile.decode(withEdit("[\"MONDAY\", \"TUESDAY\", \"THURSDAY\"]", "[\"SUNDAY\"]"))
+    }
+
+    @Test
+    fun `special days are only accepted on Heiligabend and Silvester`() {
+        for (day in listOf("--12-25", "--01-01", "--02-29", "--07-04", "--12-23")) {
+            val e = refused<BackupException.Damaged>(withEdit("\"--12-31\"", "\"$day\""))
+            assertTrue(
+                e.message!!.contains("specialDays"),
+                "the message names the place: ${e.message}",
+            )
+        }
+        // Either of the two alone, and none, are fine.
+        BackupFile.decode(
+            withEdit("{\"day\": \"--12-31\", \"halfDays\": 0}", "").replace("}, ]", "}]"),
+        )
+        BackupFile.decode(
+            withEdit(
+                "[{\"day\": \"--12-24\", \"halfDays\": 1}, {\"day\": \"--12-31\", \"halfDays\": 0}]",
+                "[]",
+            ),
+        )
     }
 
     @Test
@@ -424,7 +462,7 @@ class BackupFileTest {
         refused<BackupException.Damaged>(
             """
             {"app": "urlaubsplaner", "formatVersion": 1,
-             "settings": {"land": null, "regionalExtras": [], "regionalOptOuts": [], "workingDays": [], "specialDays": []},
+             "settings": {"land": null, "regionalExtras": [], "regionalOptOuts": [], "workingDays": ["MONDAY"], "specialDays": []},
              "entitlements": {}, "markedDays": []}
             """.trimIndent(),
         )

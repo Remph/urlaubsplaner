@@ -23,6 +23,7 @@ import java.time.LocalDate
  */
 class BackupFileStore(
     private val resolver: ContentResolver,
+    private val packageName: String,
 ) {
     suspend fun write(
         uri: Uri,
@@ -30,6 +31,7 @@ class BackupFileStore(
         exportedOn: LocalDate,
     ) = withContext(Dispatchers.IO) {
         // "wt" truncates: with plain "w" some providers keep the tail of a longer old file.
+        requirePickerUri(uri, packageName)
         val output =
             resolver.openOutputStream(uri, "wt")
                 ?: throw FileNotFoundException("No stream for $uri")
@@ -38,6 +40,7 @@ class BackupFileStore(
 
     suspend fun read(uri: Uri): BackupData =
         withContext(Dispatchers.IO) {
+            requirePickerUri(uri, packageName)
             val input =
                 resolver.openInputStream(uri) ?: throw FileNotFoundException("No stream for $uri")
             input.use { BackupFile.readFrom(it) }

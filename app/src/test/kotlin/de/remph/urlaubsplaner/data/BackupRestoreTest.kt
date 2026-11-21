@@ -70,6 +70,7 @@ class BackupRestoreTest {
 
     @Before
     fun open() {
+        TestDocuments.register()
         context = ApplicationProvider.getApplicationContext()
         database = Room.inMemoryDatabaseBuilder(context, UrlaubsplanerDatabase::class.java).build()
         repository = UserDataRepository(database)
@@ -82,8 +83,8 @@ class BackupRestoreTest {
         file.delete()
     }
 
-    private val store get() = BackupFileStore(context.contentResolver)
-    private val uri get() = Uri.fromFile(file)
+    private val store get() = BackupFileStore(context.contentResolver, context.packageName)
+    private val uri get() = TestDocuments.uriFor(file)
 
     @Test
     fun `a new database reads as empty`() =
@@ -213,5 +214,55 @@ class BackupRestoreTest {
         file.delete()
 
         assertThrows(java.io.IOException::class.java) { runBlocking { store.read(uri) } }
+    }
+
+    // The picker gives content:// addresses. ContentResolver also opens file:// ones, and a file
+    // manager that answers "create a file" with the app's own database path would make the export
+    // overwrite it.
+
+    @Test
+    fun `a file address is refused for writing and the file is untouched`() {
+        file.writeText("keep me")
+
+        assertThrows(java.io.FileNotFoundException::class.java) {
+            runBlocking { store.write(Uri.fromFile(file), data, exportedOn) }
+        }
+
+        assertEquals("keep me", file.readText())
+    }
+
+    @Test
+    fun `a file address is refused for reading`() {
+        runBlocking { store.write(uri, data, exportedOn) }
+
+        assertThrows(java.io.FileNotFoundException::class.java) {
+            runBlocking { store.read(Uri.fromFile(file)) }
+        }
+    }
+
+    @Test
+    fun `the address of our own file provider is refused for writing and reading`() {
+        val own =
+            Uri
+                .Builder()
+                .scheme("content")
+                .authority(context.packageName + CalendarFileStore.AUTHORITY_SUFFIX)
+                .appendPath("calendar")
+                .appendPath("urlaubsplaner.ics")
+                .build()
+
+        assertThrows(java.io.FileNotFoundException::class.java) {
+            runBlocking { store.write(own, data, exportedOn) }
+        }
+        assertThrows(java.io.FileNotFoundException::class.java) {
+            runBlocking { store.read(own) }
+        }
+    }
+
+    @Test
+    fun `an address with no scheme is refused`() {
+        assertThrows(java.io.FileNotFoundException::class.java) {
+            runBlocking { store.read(Uri.parse("/data/data/some/file.json")) }
+        }
     }
 }

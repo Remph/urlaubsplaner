@@ -28,7 +28,7 @@ class UrlaubsplanerApp : Application() {
 
     val repository by lazy { UserDataRepository(database) }
 
-    val backupStore by lazy { BackupFileStore(contentResolver) }
+    val backupStore by lazy { BackupFileStore(contentResolver, packageName) }
 
     val calendarExporter by lazy { CalendarExporter(repository, CalendarFileStore(this), clock) }
 

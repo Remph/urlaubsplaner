@@ -79,7 +79,7 @@ class SettingsScreenTest {
         viewModel =
             SettingsViewModel(
                 repository,
-                BackupFileStore(context.contentResolver),
+                BackupFileStore(context.contentResolver, context.packageName),
                 CalendarExporter(repository, CalendarFileStore(context), clock),
                 clock,
                 backupStatus,

@@ -7,6 +7,7 @@ import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.VacationCalculator
 import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.balance.WorkSchedule
+import de.remph.urlaubsplaner.core.holidays.PublicHolidays
 import java.time.Clock
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -86,6 +87,7 @@ class BridgeFinder(
             date.dayOfWeek in schedule.workingDays &&
                 (isPublicHoliday(date) || schedule.workingValue(date) == VacationDays.ZERO)
 
+        val firstSupportedDay = LocalDate.of(PublicHolidays.FIRST_SUPPORTED_YEAR, 1, 1)
         val lastDay = LocalDate.of(year, 12, 31)
         var day = LocalDate.of(year, 1, 1)
         // A gap that began in the year before belongs to that year; step over it.
@@ -112,8 +114,12 @@ class BridgeFinder(
                 continue
             }
 
+            // A schedule with many days off can make the free stretch reach back for years; the
+            // holiday rules throw before their first year, so the walk stops there.
             var start = leave.first().minusDays(1)
-            while (isFree(start.minusDays(1))) start = start.minusDays(1)
+            while (start > firstSupportedDay && isFree(start.minusDays(1))) {
+                start = start.minusDays(1)
+            }
             var end = day
             while (isFree(end.plusDays(1))) end = end.plusDays(1)
             val anchor =
