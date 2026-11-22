@@ -170,10 +170,10 @@ class YearViewTest {
     }
 
     @Test
-    fun `without a Land and in the first supported year there are no bridges`() {
+    fun `without a Land there are no bridges, and the first supported year has its own`() {
         assertTrue(view(settings = UserSettings()).upcomingBridges.isEmpty())
 
-        // The finder reads the day before the year, which the holiday rules cannot answer for 2019.
+        // The finder reads the day before the year; the holiday check answers "no holiday" for it.
         val s = settings
         val first =
             YearView(
@@ -186,7 +186,10 @@ class YearViewTest {
                 schoolData = fixture.schoolHolidays,
                 bridgeFinder = BridgeFinder(fixture.clock, s.schedule, s.publicHolidayCheck()!!),
             )
-        assertTrue(first.upcomingBridges.isEmpty())
+        // Christi Himmelfahrt 2019 was Thursday 30 May in NRW, so Friday the 31st is a bridge.
+        assertTrue(first.upcomingBridges.any { it.leave == listOf(fixture.date("2019-05-31")) })
+        // The groups for the overview are made when the view is built; the fixture clock is in 2027,
+        // so none of 2019 is "best" any more, but building them did not throw.
         assertTrue(first.bridgeGroups.isEmpty())
     }
 

@@ -124,8 +124,7 @@ class SettingsViewModel(
         previousMarks: Map<LocalDate, DayMark>,
     ): YearEntitlement? {
         val check = settings.publicHolidayCheck()
-        // The rules only know years from 2019; a year before that has nothing to suggest from.
-        if (previous == null || check == null || year - 1 < firstYear) return null
+        if (previous == null || check == null) return null
         val balance =
             VacationCalculator(clock, settings.schedule, check).balance(previous, previousMarks)
         return EntitlementSuggestion.forYear(year, previous, balance, settings.suggestCarryOver)

@@ -6,6 +6,7 @@ package de.remph.urlaubsplaner.core.settings
 import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.holidays.Bundesland
 import de.remph.urlaubsplaner.core.holidays.Holiday
+import de.remph.urlaubsplaner.core.holidays.PublicHolidays
 import de.remph.urlaubsplaner.core.holidays.RegionalExtra
 import de.remph.urlaubsplaner.core.holidays.RegionalOptOut
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,6 +30,20 @@ class UserSettingsTest {
     @Test
     fun `without a Land there is no holiday check`() {
         assertNull(UserSettings().publicHolidayCheck())
+    }
+
+    @Test
+    fun `a date before 2019 is no public holiday instead of an error`() {
+        val settings = UserSettings(land = Bundesland.BAYERN)
+        val check = settings.publicHolidayCheck()!!
+
+        // 25 December 2018 was a holiday, but the rules start in 2019 and say nothing before.
+        assertFalse(check(LocalDate.of(2018, 12, 25)))
+        assertFalse(check(LocalDate.of(1900, 1, 1)))
+        assertFalse(check(LocalDate.MIN))
+        assertTrue(settings.publicHolidays(2018).isEmpty())
+        assertTrue(check(LocalDate.of(2019, 1, 1)))
+        assertFalse(PublicHolidays.isHoliday(Bundesland.BAYERN, LocalDate.of(2018, 12, 25)))
     }
 
     @Test

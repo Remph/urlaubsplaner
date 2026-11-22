@@ -196,7 +196,7 @@ class WidgetStatusTest {
     }
 
     @Test
-    fun `a mark from before 2019 is ignored instead of failing`() {
+    fun `a mark from before 2019 does not make the status fail`() {
         val marks = mapOf(LocalDate.of(2018, 6, 4) to DayMark.FULL)
 
         assertEquals(VacationDays.of(30), ready(marks = marks).balance.remaining)

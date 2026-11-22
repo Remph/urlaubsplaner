@@ -50,8 +50,8 @@ data class Bridge(
  *
  * Only a whole gap counts, since taking part of it leaves a working day in the middle. A year's
  * bridges are those whose first day to take lies in that year. The stretch may reach into the
- * neighbouring years, so with `PublicHolidays.isHoliday` as [isPublicHoliday] the year before
- * the first supported year can be asked for and throws: use years after `FIRST_SUPPORTED_YEAR`.
+ * neighbouring years; before `FIRST_SUPPORTED_YEAR` the holiday check answers "no holiday", and
+ * the walk back stops there.
  *
  * "Today" comes from [clock] and is used only by [best].
  */

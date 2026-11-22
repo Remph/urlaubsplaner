@@ -6,7 +6,6 @@ package de.remph.urlaubsplaner.settings
 import android.net.Uri
 import de.remph.urlaubsplaner.core.balance.MarkedDays
 import de.remph.urlaubsplaner.core.balance.VacationCalculator
-import de.remph.urlaubsplaner.core.holidays.PublicHolidays
 import de.remph.urlaubsplaner.core.ics.IcsExport
 import de.remph.urlaubsplaner.core.ics.IcsLanguage
 import de.remph.urlaubsplaner.data.CalendarFileStore
@@ -50,9 +49,7 @@ class CalendarExporter(
         val settings = data.settings
         val check = settings.publicHolidayCheck() ?: return null
         val calculator = VacationCalculator(clock, settings.schedule, check)
-        // The holiday rules start in 2019; an older mark (from a hand-made backup) cannot be priced.
-        val usable = data.marks.filterKeys { it.year >= PublicHolidays.FIRST_SUPPORTED_YEAR }
-        val days = MarkedDays(usable, data.granted.filter { it in usable }.toSet())
+        val days = MarkedDays(data.marks, data.granted.filter { it in data.marks }.toSet())
         return Prepared(IcsExport(clock, calculator), days, withStatus = settings.grantedDays)
     }
 

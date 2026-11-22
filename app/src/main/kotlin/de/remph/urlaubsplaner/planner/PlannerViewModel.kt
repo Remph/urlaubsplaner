@@ -329,7 +329,7 @@ class PlannerViewModel(
             repository.observeSettings(),
             repository.observeEntitlement(year),
             repository.observeMarkedDays(
-                LocalDate.of(year - 1, 12, 1).coerceAtLeast(LocalDate.of(firstYear, 1, 1)),
+                LocalDate.of(year - 1, 12, 1),
                 LocalDate.of(year + 1, 12, 31),
             ),
             today,

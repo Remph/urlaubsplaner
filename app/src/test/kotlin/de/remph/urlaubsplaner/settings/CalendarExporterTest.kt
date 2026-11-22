@@ -90,12 +90,12 @@ class CalendarExporterTest {
     }
 
     @Test
-    fun `a stored mark from before 2019 is ignored instead of crashing the export`() {
+    fun `a stored mark from before 2019 is exported like any other and does not crash`() {
         land()
         twoTrips()
         runBlocking { repository.mark(date("2018-06-04"), DayMark.FULL) }
 
-        assertEquals(2, runBlocking { exporter.tripCount() })
+        assertEquals(3, runBlocking { exporter.tripCount() })
     }
 
     @Test

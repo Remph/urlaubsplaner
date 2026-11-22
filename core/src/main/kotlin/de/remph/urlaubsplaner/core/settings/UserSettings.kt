@@ -36,9 +36,17 @@ data class UserSettings(
      */
     val grantedDays: Boolean = false,
 ) {
-    /** The public holidays of [year] for this user; none while no Land is chosen. */
+    /**
+     * The public holidays of [year] for this user; none while no Land is chosen, and none before
+     * [PublicHolidays.FIRST_SUPPORTED_YEAR], whose rules differ and are not kept. This is the one
+     * place that guards the first year, so no caller has to.
+     */
     fun publicHolidays(year: Int): List<PublicHoliday> =
-        land?.let { PublicHolidays.of(it, year, extras, optOuts) }.orEmpty()
+        if (year < PublicHolidays.FIRST_SUPPORTED_YEAR) {
+            emptyList()
+        } else {
+            land?.let { PublicHolidays.of(it, year, extras, optOuts) }.orEmpty()
+        }
 
     /** The first public holiday on or after [from], looking into the next year too. */
     fun nextPublicHoliday(from: LocalDate): PublicHoliday? =
@@ -46,17 +54,16 @@ data class UserSettings(
 
     /**
      * Whether a date is a public holiday for this user, or null while no Land is chosen. One
-     * function for marked days, the balance and Brückentage, so they never disagree. Throws for
-     * dates before 2019 (see `PublicHolidays`).
+     * function for marked days, the balance and Brückentage, so they never disagree. A date
+     * before 2019 is no public holiday (see [publicHolidays]), so a mark from a hand-made backup
+     * or an old database cannot make it throw.
      */
     fun publicHolidayCheck(): ((LocalDate) -> Boolean)? {
         val land = land ?: return null
         val years = ConcurrentHashMap<Int, Set<LocalDate>>()
         return { date ->
             date in
-                years.getOrPut(date.year) {
-                    PublicHolidays.of(land, date.year, extras, optOuts).map { it.date }.toSet()
-                }
+                years.getOrPut(date.year) { publicHolidays(date.year).map { it.date }.toSet() }
         }
     }
 }

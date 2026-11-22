@@ -9,7 +9,6 @@ import de.remph.urlaubsplaner.core.balance.VacationBalance
 import de.remph.urlaubsplaner.core.balance.VacationCalculator
 import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.balance.YearEntitlement
-import de.remph.urlaubsplaner.core.holidays.PublicHolidays
 import de.remph.urlaubsplaner.core.settings.UserSettings
 import java.time.Clock
 import java.time.LocalDate
@@ -58,11 +57,9 @@ sealed interface WidgetStatus {
             val entitlement =
                 entitlements.firstOrNull { it.year == today.year }
                     ?: return NoEntitlement(today.year)
-            // The holiday rules start in 2019; an older mark cannot be priced.
-            val usable = marks.filterKeys { it.year >= PublicHolidays.FIRST_SUPPORTED_YEAR }
             val calculator = VacationCalculator(clock, settings.schedule, check)
-            val balance = calculator.balance(entitlement, usable)
-            val trip = calculator.trips(usable).firstOrNull { !it.end.isBefore(today) }
+            val balance = calculator.balance(entitlement, marks)
+            val trip = calculator.trips(marks).firstOrNull { !it.end.isBefore(today) }
             val open = balance.carryOverOpen
             return Ready(
                 year = today.year,

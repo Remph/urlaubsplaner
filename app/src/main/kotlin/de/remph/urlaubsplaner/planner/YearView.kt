@@ -17,7 +17,6 @@ import de.remph.urlaubsplaner.core.bridge.BridgeFinder
 import de.remph.urlaubsplaner.core.bridge.BridgeGroup
 import de.remph.urlaubsplaner.core.bridge.groupedByAnchor
 import de.remph.urlaubsplaner.core.holidays.Holiday
-import de.remph.urlaubsplaner.core.holidays.PublicHolidays
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHoliday
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHolidayData
 import de.remph.urlaubsplaner.core.settings.UserSettings
@@ -63,13 +62,9 @@ class YearView(
 
     val trips: List<Trip> = calculator?.trips(marks).orEmpty()
 
-    /**
-     * Every Brückentag still to come this year (at most 2 vacation days each), for the calendar.
-     * Not for the first supported year: the finder looks at the day before the year starts, and
-     * the holiday rules do not go back that far.
-     */
+    /** Every Brückentag still to come this year (at most 2 vacation days each), for the calendar. */
     val upcomingBridges: List<Bridge> =
-        if (bridgeFinder != null && year > PublicHolidays.FIRST_SUPPORTED_YEAR) {
+        if (bridgeFinder != null) {
             bridgeFinder.find(year, marks).filter { it.leave.first() > today }
         } else {
             emptyList()
@@ -80,7 +75,7 @@ class YearView(
 
     /** The best few bridges, grouped under the holiday they belong to, for the overview. */
     val bridgeGroups: List<BridgeGroup> =
-        if (bridgeFinder != null && year > PublicHolidays.FIRST_SUPPORTED_YEAR) {
+        if (bridgeFinder != null) {
             bridgeFinder.best(year, BEST_BRIDGES, marks).groupedByAnchor()
         } else {
             emptyList()
