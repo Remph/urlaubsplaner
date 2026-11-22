@@ -93,7 +93,7 @@ class IcsExportGoldenTest {
     @Test
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     fun `forty thousand one-day trips are written fast`() {
-        // Every other day from year 1900 on: each mark is a trip of its own (the day between is a
+        // Every other day from 2019 on: each mark is a trip of its own (the day between is a
         // working day that costs). The quadratic code needed about 18 seconds for 41,000 trips.
         val marks = mutableMapOf<LocalDate, DayMark>()
         var day = LocalDate.of(2019, 1, 1)

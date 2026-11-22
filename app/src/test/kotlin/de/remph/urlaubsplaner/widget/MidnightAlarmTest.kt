@@ -5,6 +5,8 @@ package de.remph.urlaubsplaner.widget
 
 import android.app.AlarmManager
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -100,8 +102,25 @@ class MidnightAlarmTest {
         assertEquals(Instant.parse("2027-03-10T23:01:00Z").toEpochMilli(), set.single().triggerAtMs)
     }
 
+    private fun placeWidget() =
+        shadowOf(AppWidgetManager.getInstance(context)).addBoundWidget(
+            31,
+            AppWidgetProviderInfo().apply {
+                provider = ComponentName(context, UrlaubsplanerWidgetReceiver::class.java)
+            },
+        )
+
     @Test
-    fun `the receiver sets the next alarm`() {
+    fun `with no widget the alarm receiver sets nothing, so the daily chain ends`() {
+        MidnightReceiver().onReceive(context, Intent(context, MidnightReceiver::class.java))
+
+        assertTrue(alarms.scheduledAlarms.isEmpty())
+    }
+
+    @Test
+    fun `with a widget the alarm receiver sets the next alarm`() {
+        placeWidget()
+
         MidnightReceiver().onReceive(context, Intent(context, MidnightReceiver::class.java))
 
         val set = alarms.scheduledAlarms
@@ -112,18 +131,23 @@ class MidnightAlarmTest {
     }
 
     @Test
-    fun `a change of time zone or time sets the alarm again, a boot sets none itself`() {
-        for (action in listOf(Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED)) {
+    fun `any broadcast a widget receiver gets sets the alarm, also in a running process`() {
+        // A widget placed while the app process lives: the system's update (or the enabled
+        // broadcast) is the only thing that reaches the app, and it must set the alarm.
+        val actions =
+            listOf(
+                AppWidgetManager.ACTION_APPWIDGET_ENABLED,
+                AppWidgetManager.ACTION_APPWIDGET_UPDATE,
+                Intent.ACTION_TIMEZONE_CHANGED,
+                Intent.ACTION_TIME_CHANGED,
+                Intent.ACTION_BOOT_COMPLETED,
+            )
+        for (action in actions) {
             cancelAlarm()
 
             receiver().onReceive(context, Intent(action))
 
             assertEquals(action, 1, alarms.scheduledAlarms.size)
         }
-
-        // The start of the process does it (UrlaubsplanerApp.onCreate); the receiver adds nothing.
-        cancelAlarm()
-        receiver().onReceive(context, Intent(Intent.ACTION_BOOT_COMPLETED))
-        assertTrue(alarms.scheduledAlarms.isEmpty())
     }
 }

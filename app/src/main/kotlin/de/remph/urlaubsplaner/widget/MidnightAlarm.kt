@@ -24,7 +24,8 @@ import java.time.LocalDate
  * can be called as often as needed: at the start of the app, after a change of time or time zone,
  * and by the alarm itself for the next day. A phone forgets its alarms at a reboot; the start of
  * the app process that the system's first widget update (or the boot broadcast) causes sets it
- * again.
+ * again, and so does every broadcast a widget receiver gets, which also covers a widget that is
+ * placed while the process is already running.
  */
 class MidnightAlarm(
     private val context: Context,
@@ -67,6 +68,10 @@ class MidnightReceiver : BroadcastReceiver() {
         intent: Intent,
     ) {
         val app = context.applicationContext as UrlaubsplanerApp
+        // With no widget left there is nothing to draw and no reason to wake the phone every
+        // night: the chain ends here, and the next widget that is placed starts it again
+        // (WidgetReceiver sets the alarm on every broadcast it gets).
+        if (!app.widgetRefresher.hasWidgets()) return
         // The next alarm first: a failure while drawing must not end the daily redraw.
         app.midnightAlarm.schedule()
         // The draw runs on a background thread; the broadcast stays alive until it is done. (goAsync
