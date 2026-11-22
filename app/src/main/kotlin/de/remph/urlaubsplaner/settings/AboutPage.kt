@@ -6,7 +6,6 @@ package de.remph.urlaubsplaner.settings
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHolidayData
 
@@ -175,7 +175,7 @@ private fun openLink(
     noBrowser: String,
 ) {
     try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
     } catch (_: ActivityNotFoundException) {
         Toast.makeText(context, noBrowser, Toast.LENGTH_SHORT).show()
     }

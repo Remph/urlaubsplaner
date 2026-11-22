@@ -14,6 +14,6 @@ import org.junit.Assume.assumeFalse
 fun assumeUnixPaths() {
     assumeFalse(
         "AndroidX assumes '/' as the path separator",
-        System.getProperty("os.name").startsWith("Windows", ignoreCase = true),
+        System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true),
     )
 }

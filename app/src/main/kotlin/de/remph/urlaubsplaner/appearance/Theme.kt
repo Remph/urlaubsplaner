@@ -6,7 +6,6 @@ package de.remph.urlaubsplaner.appearance
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -23,6 +22,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.drawable.toDrawable
 
 /**
  * The app's colours. Whether it is dark comes from the activity's configuration, which
@@ -53,7 +53,7 @@ fun UrlaubsplanerTheme(
     // it shows through as a grey flash while the activity restarts, also in pure black.
     SideEffect {
         context.findActivity()?.window?.setBackgroundDrawable(
-            ColorDrawable(colors.background.toArgb()),
+            colors.background.toArgb().toDrawable(),
         )
     }
     MaterialTheme(colorScheme = colors, content = content)

@@ -116,6 +116,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // A new lint warning stops the build, so they do not pile up (tech audit 2026-11-21, finding
+    // 06). A false positive is silenced where it stands, with tools:ignore and a reason.
+    lint {
+        warningsAsErrors = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        // The same for the compiler, in the code and in the tests.
+        allWarningsAsErrors.set(true)
+    }
 }
 
 baselineProfile {

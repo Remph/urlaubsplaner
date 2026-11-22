@@ -275,9 +275,7 @@ private fun rememberMarkDrag(
                                 )
                             }
 
-                            DragFeedback.NONE -> {
-                                Unit
-                            }
+                            DragFeedback.NONE -> {}
                         }
                         state.range = drag.range
                         follow(point)
@@ -471,9 +469,7 @@ fun dayDescription(
     }
     if (look.school) parts += stringResource(R.string.day_school_holiday)
     when {
-        look.mark == null -> {
-            Unit
-        }
+        look.mark == null -> {}
 
         look.mark == DayMark.HALF && look.taken -> {
             parts += stringResource(R.string.day_taken_half)
