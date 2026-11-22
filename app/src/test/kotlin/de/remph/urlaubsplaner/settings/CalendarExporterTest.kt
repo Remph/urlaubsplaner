@@ -14,6 +14,7 @@ import de.remph.urlaubsplaner.core.holidays.Bundesland
 import de.remph.urlaubsplaner.core.ics.IcsLanguage
 import de.remph.urlaubsplaner.core.settings.UserSettings
 import de.remph.urlaubsplaner.data.CalendarFileStore
+import de.remph.urlaubsplaner.data.TestDocuments
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
 import de.remph.urlaubsplaner.data.UserDataRepository
 import kotlinx.coroutines.runBlocking
@@ -21,6 +22,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -45,6 +47,7 @@ class CalendarExporterTest {
 
     @Before
     fun open() {
+        TestDocuments.register()
         context = ApplicationProvider.getApplicationContext()
         database = Room.inMemoryDatabaseBuilder(context, UrlaubsplanerDatabase::class.java).build()
         repository = UserDataRepository(database)
@@ -100,7 +103,7 @@ class CalendarExporterTest {
         land()
         twoTrips()
 
-        runBlocking { exporter.save(Uri.fromFile(file), IcsLanguage.GERMAN) }
+        runBlocking { exporter.save(TestDocuments.uriFor(file), IcsLanguage.GERMAN) }
 
         val text = file.readText()
         assertEquals(2, text.split("BEGIN:VEVENT").size - 1)
@@ -116,7 +119,7 @@ class CalendarExporterTest {
         twoTrips()
         file.writeText("x".repeat(10_000))
 
-        runBlocking { exporter.save(Uri.fromFile(file), IcsLanguage.ENGLISH) }
+        runBlocking { exporter.save(TestDocuments.uriFor(file), IcsLanguage.ENGLISH) }
 
         assertTrue(file.readText().endsWith("END:VCALENDAR\r\n"))
         assertTrue(file.readText().contains("SUMMARY:Vacation"))
@@ -169,7 +172,7 @@ class CalendarExporterTest {
             repository.setGranted((15..17).map { date("2027-03-$it") }, true)
         }
 
-        runBlocking { exporter.save(Uri.fromFile(file), IcsLanguage.GERMAN) }
+        runBlocking { exporter.save(TestDocuments.uriFor(file), IcsLanguage.GERMAN) }
 
         val text = file.readText()
         // The taken trip and the granted part are confirmed, the rest of the week is tentative.
@@ -185,10 +188,23 @@ class CalendarExporterTest {
         twoTrips()
         runBlocking { repository.setGranted((15..17).map { date("2027-03-$it") }, true) }
 
-        runBlocking { exporter.save(Uri.fromFile(file), IcsLanguage.GERMAN) }
+        runBlocking { exporter.save(TestDocuments.uriFor(file), IcsLanguage.GERMAN) }
 
         val text = file.readText()
         assertEquals(2, text.split("BEGIN:VEVENT").size - 1)
         assertTrue(!text.contains("STATUS"))
+    }
+
+    @Test
+    fun `a file address from the picker slot is refused and the file is untouched`() {
+        land()
+        twoTrips()
+        file.writeText("keep me")
+
+        assertThrows(java.io.FileNotFoundException::class.java) {
+            runBlocking { exporter.save(Uri.fromFile(file), IcsLanguage.GERMAN) }
+        }
+
+        assertEquals("keep me", file.readText())
     }
 }

@@ -54,7 +54,10 @@ nicht gegenseitig aktualisieren. Wer von einer zur anderen wechselt, sichert vor
 
 Die App hat keine Internetberechtigung, kein Konto, keine Werbung und keine Auswertung. Alles
 liegt lokal auf dem Telefon. Die Sicherungsdatei und der Kalender-Export gehen nur dorthin, wohin du
-sie selbst speicherst oder schickst.
+sie selbst speicherst oder schickst. Die App macht bei der Google-Cloud-Sicherung nicht mit. Beim
+Wechsel auf ein neues Telefon können die Übertragungsprogramme mancher Hersteller die App-Daten
+trotzdem mitkopieren (Google schreibt, dass seine Abmeldung davon dort nicht immer schützt). Das
+sind deine eigenen Daten auf deinem eigenen Telefon. Die Sicherungsdatei klappt in jedem Fall.
 
 ## Daten und Lizenzen
 
@@ -123,7 +126,11 @@ switch, back up in Settings > Backup, uninstall, install the other one and resto
 ### Privacy
 
 No internet permission, no account, no ads, no tracking. Everything is stored on the phone.
-Backups and calendar exports go only where you save or send them yourself.
+Backups and calendar exports go only where you save or send them yourself. The app opts out of
+Google's cloud backup. When you switch phones, though, some manufacturers' transfer tools may still
+copy the app's data to the new phone (Google says its opt-out does not cover that on devices from
+some manufacturers). That is your own data going to your own phone; the backup file is the way that
+always works.
 
 ### Data and licences
 

@@ -4,13 +4,13 @@
 package de.remph.urlaubsplaner.widget
 
 import android.appwidget.AppWidgetProvider
-import android.net.Uri
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.remph.urlaubsplaner.FreshApp
 import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.backup.BackupData
+import de.remph.urlaubsplaner.core.backup.BackupFile
 import de.remph.urlaubsplaner.core.balance.AmountText
 import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.VacationCalculator
@@ -18,7 +18,6 @@ import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.balance.YearEntitlement
 import de.remph.urlaubsplaner.core.holidays.Bundesland
 import de.remph.urlaubsplaner.core.settings.UserSettings
-import de.remph.urlaubsplaner.data.BackupFileStore
 import de.remph.urlaubsplaner.targetApp
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
@@ -112,21 +111,24 @@ class WidgetOnDeviceTest {
 
     @Test
     fun `a widget placed on a fresh app shows the numbers after a backup is restored`() {
-        // The backup goes through a real file and ContentResolver, as the picker's file would.
+        // The backup goes through a real file, as the picker's file would. Not through
+        // BackupFileStore: it accepts only the picker's content:// addresses, and a test has no picker.
         val file = File(app.cacheDir, "widget-restore.json")
         val backup =
             BackupData(
                 settings = UserSettings(land = Bundesland.NORDRHEIN_WESTFALEN),
                 entitlements = listOf(YearEntitlement(year, VacationDays.of(28))),
             )
-        val uri = Uri.fromFile(file)
-        val store = BackupFileStore(app.contentResolver)
         try {
-            runBlocking { store.write(uri, backup, LocalDate.now(app.clock)) }
+            file.outputStream().use { BackupFile.writeTo(it, backup, LocalDate.now(app.clock)) }
             place(UrlaubsplanerWidgetReceiver::class.java).use { widget ->
                 widget.awaitText(text(R.string.land_choose))
 
-                runBlocking { repository.replaceAll(store.read(uri)) }
+                runBlocking {
+                    repository.replaceAll(
+                        file.inputStream().use { BackupFile.readFrom(it) },
+                    )
+                }
 
                 widget.awaitText(number(28.0))
             }

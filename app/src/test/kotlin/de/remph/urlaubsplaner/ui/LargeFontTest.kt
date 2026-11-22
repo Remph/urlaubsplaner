@@ -63,7 +63,7 @@ class LargeFontTest {
         val settings =
             SettingsViewModel(
                 fixture.repository,
-                BackupFileStore(context.contentResolver),
+                BackupFileStore(context.contentResolver, context.packageName),
                 CalendarExporter(fixture.repository, CalendarFileStore(context), fixture.clock),
                 fixture.clock,
                 fixture.backupStatus,

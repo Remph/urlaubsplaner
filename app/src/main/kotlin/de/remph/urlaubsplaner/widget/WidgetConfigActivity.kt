@@ -4,6 +4,7 @@
 package de.remph.urlaubsplaner.widget
 
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -30,6 +31,11 @@ import kotlinx.coroutines.launch
 class WidgetConfigActivity : AppCompatActivity() {
     private var style by mutableStateOf(WidgetStyle())
 
+    private fun isOurWidget(appWidgetId: Int): Boolean {
+        val provider = AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)?.provider
+        return provider != null && WIDGET_RECEIVERS.any { provider == ComponentName(this, it) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -44,6 +50,12 @@ class WidgetConfigActivity : AppCompatActivity() {
             Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId),
         )
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            finish()
+            return
+        }
+        // The screen is exported (the launcher needs it), so any app can send any id. Glance throws
+        // IllegalArgumentException for an id that is gone or belongs to another app's widget.
+        if (!isOurWidget(appWidgetId)) {
             finish()
             return
         }

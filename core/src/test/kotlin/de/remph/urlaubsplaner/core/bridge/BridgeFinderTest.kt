@@ -378,4 +378,20 @@ class BridgeFinderTest {
         // Dreikönig is a Tuesday in 2026, so the Monday before it is a bridge in Bayern.
         assertTrue(listOf(d(1, 5)) in leaves)
     }
+
+    @Test
+    fun `a free stretch that reaches back does not look before the first supported year`() {
+        // Every day before 29 February 2024 is a day off, so the stretch before the one working day
+        // reaches back past 2019. The holiday rules throw there, like PublicHolidays does.
+        val finder =
+            BridgeFinder(clockAt(d(1, 1)), WorkSchedule()) {
+                require(it.year >= PublicHolidays.FIRST_SUPPORTED_YEAR) { "no holidays for $it" }
+                it < d(2, 29, 2024)
+            }
+
+        val bridge = finder.find(2024).first()
+
+        assertEquals(d(2, 29, 2024), bridge.leave.first())
+        assertEquals(d(1, 1, PublicHolidays.FIRST_SUPPORTED_YEAR), bridge.start)
+    }
 }

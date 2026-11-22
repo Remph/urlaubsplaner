@@ -74,7 +74,22 @@ class IcsExport(
         val confirmed: Boolean?,
     )
 
+    /**
+     * The events the file can hold. The ICS date has four digits and the end is the day after the
+     * trip, so a trip on 9999-12-31 cannot be written; leaving it out beats a crash in the export.
+     * The backup reader never lets such days in, this is the second line of defence.
+     */
     private fun events(
+        days: MarkedDays,
+        withStatus: Boolean,
+    ): List<Event> =
+        allEvents(days, withStatus).filter {
+            it.trip.start.year >= 0 && it.trip.end
+                .plusDays(1)
+                .year <= MAX_WRITABLE_YEAR
+        }
+
+    private fun allEvents(
         days: MarkedDays,
         withStatus: Boolean,
     ): List<Event> {
@@ -180,6 +195,7 @@ class IcsExport(
 
         private const val UID_DOMAIN = "de.remph.urlaubsplaner"
         private const val PRODID = "-//de.remph.urlaubsplaner//Urlaubsplaner//EN"
+        private const val MAX_WRITABLE_YEAR = 9999
         private val DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE
         private val STAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")
 

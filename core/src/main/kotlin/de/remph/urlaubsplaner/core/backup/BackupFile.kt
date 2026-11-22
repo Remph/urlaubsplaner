@@ -81,10 +81,15 @@ object BackupFile {
     // A year has at most 366 days; anything above is a typo, and a sum of such values must not overflow.
     private const val MAX_HALF_DAYS = 2 * 366
 
-    // Years with four digits, the form the database and the file write. Beyond them a date is not
-    // a vacation, and the year arithmetic of the Resturlaub expiry would overflow.
-    private const val MIN_YEAR = 0
-    private const val MAX_YEAR = 9999
+    // The screens write 2019 to next year. The range is wide on purpose, but it must stay inside
+    // what the rules and the calendar file can handle: the bridge search and the public holidays
+    // need years from 2019 on and look a few years around a mark, and the ICS date has four digits
+    // (a mark on 9999-12-31 ends on 10000-01-01, which cannot be written). The year arithmetic of
+    // the Resturlaub expiry must not overflow either.
+    private const val MIN_YEAR = 1900
+    private const val MAX_YEAR = 2999
+
+    private val ALLOWED_SPECIAL_DAYS = setOf(WorkSchedule.HEILIGABEND, WorkSchedule.SILVESTER)
 
     private val json = Json { prettyPrint = true }
 
@@ -250,6 +255,16 @@ object BackupFile {
             }
         val days = specialDays.map { it.first }
         if (days.size != days.toSet().size) damaged("settings.specialDays lists a day twice")
+        // The screens offer special days for these two only; any other date can never be shown or changed.
+        days.firstOrNull { it !in ALLOWED_SPECIAL_DAYS }?.let {
+            damaged("settings.specialDays: $it is not one of $ALLOWED_SPECIAL_DAYS")
+        }
+        val workingDays =
+            settings.names("workingDays", "settings") { name ->
+                DayOfWeek.entries.find { it.name == name }
+            }
+        // The screens keep at least one working day; with none, no day costs anything.
+        if (workingDays.isEmpty()) damaged("settings.workingDays must have at least one day")
         return UserSettings(
             land = land,
             extras =
@@ -262,10 +277,7 @@ object BackupFile {
                 },
             schedule =
                 WorkSchedule(
-                    workingDays =
-                        settings.names("workingDays", "settings") { name ->
-                            DayOfWeek.entries.find { it.name == name }
-                        },
+                    workingDays = workingDays,
                     specialDays = specialDays.toMap(),
                 ),
             suggestCarryOver = settings.optionalBoolean("suggestCarryOver", "settings"),
