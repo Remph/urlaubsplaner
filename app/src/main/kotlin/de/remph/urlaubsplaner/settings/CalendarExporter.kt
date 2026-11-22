@@ -10,37 +10,53 @@ import de.remph.urlaubsplaner.core.ics.IcsExport
 import de.remph.urlaubsplaner.core.ics.IcsLanguage
 import de.remph.urlaubsplaner.data.CalendarFileStore
 import de.remph.urlaubsplaner.data.UserDataRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.Clock
 import java.time.LocalDate
 
 /**
  * Puts what is stored through [IcsExport] and out through [CalendarFileStore]. Everything is read
- * fresh for each call, so the file always matches what the screens show.
+ * fresh for each call, so the file always matches what the screens show. The text is made on
+ * [compute] (a thread of its own, not the main thread: a backup with tens of thousands of trips
+ * takes a while even in linear time); tests pass their own dispatcher.
  */
 class CalendarExporter(
     private val repository: UserDataRepository,
     private val store: CalendarFileStore,
     private val clock: Clock,
+    private val compute: CoroutineDispatcher = Dispatchers.Default,
 ) {
     fun suggestedFileName(): String = IcsExport.fileName(LocalDate.now(clock))
 
     /** How many events the file would hold; 0 also when no Bundesland is chosen yet. */
     suspend fun tripCount(): Int =
-        prepared()?.let { it.export.tripCount(it.days, it.withStatus) } ?: 0
+        withContext(compute) {
+            prepared()?.let { it.export.tripCount(it.days, it.withStatus) } ?: 0
+        }
 
     suspend fun save(
         uri: Uri,
         language: IcsLanguage,
     ) {
-        val prepared = prepared() ?: return
-        store.write(uri, prepared.encode(language))
+        val text = withContext(compute) { prepared()?.encode(language) } ?: return
+        store.write(uri, text)
     }
 
     /** The address of a freshly written file for a calendar app, or null when there is nothing to open. */
     suspend fun openUri(language: IcsLanguage): Uri? {
-        val prepared = prepared() ?: return null
-        if (prepared.export.tripCount(prepared.days, prepared.withStatus) == 0) return null
-        return store.writeForOpening(suggestedFileName(), prepared.encode(language))
+        val text =
+            withContext(compute) {
+                val prepared = prepared() ?: return@withContext null
+                if (prepared.export.tripCount(prepared.days, prepared.withStatus) ==
+                    0
+                ) {
+                    return@withContext null
+                }
+                prepared.encode(language)
+            } ?: return null
+        return store.writeForOpening(suggestedFileName(), text)
     }
 
     /** Without a Land there are no public holidays, so what a marked day costs is not known. */
