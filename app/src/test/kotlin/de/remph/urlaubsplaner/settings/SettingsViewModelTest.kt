@@ -90,7 +90,7 @@ class SettingsViewModelTest {
 
     private var replaced = 0
 
-    private fun viewModel(): SettingsViewModel {
+    private fun viewModel(clock: Clock = this.clock): SettingsViewModel {
         val viewModel =
             SettingsViewModel(
                 repository,
@@ -127,6 +127,27 @@ class SettingsViewModelTest {
         assertNull(state.form.base)
         assertFalse(state.form.canSave)
         assertFalse(state.settings.suggestCarryOver)
+    }
+
+    @Test
+    fun `the year steps on over New Year while the ViewModel is kept`() {
+        val moving = MovableClock("2027-12-31T10:00:00Z")
+        val vm = viewModel(moving)
+        vm.await()
+        vm.selectYear(2028)
+        // 2028 is the last year to step to; the arrow forward is gone.
+        assertFalse(vm.await { it.year == 2028 }.canGoForward)
+
+        moving.set("2028-01-01T10:00:00Z")
+        vm.refreshYear()
+
+        assertEquals(2028, vm.currentYear)
+        assertTrue(vm.await { it.year == 2028 && it.canGoForward }.canGoForward)
+        vm.selectYear(2029)
+        assertEquals(2029, vm.await { it.year == 2029 }.year)
+        // Back to the list: the settings show the new current year.
+        vm.selectYear(vm.currentYear)
+        assertEquals(2028, vm.await { it.year == 2028 }.year)
     }
 
     @Test
@@ -703,4 +724,21 @@ class SettingsViewModelTest {
         vm.await { !it.settings.grantedDays }
         assertFalse(runBlocking { repository.observeSettings().first() }.grantedDays)
     }
+}
+
+/** A clock whose time a test can set; the zone stays UTC. */
+private class MovableClock(
+    start: String,
+) : Clock() {
+    private var now = Instant.parse(start)
+
+    fun set(instant: String) {
+        now = Instant.parse(instant)
+    }
+
+    override fun getZone() = ZoneOffset.UTC
+
+    override fun withZone(zone: java.time.ZoneId) = fixed(now, zone)
+
+    override fun instant(): Instant = now
 }

@@ -21,8 +21,11 @@ import java.time.Clock
  * here; there is no dependency injection library because there are only a few parts.
  */
 class UrlaubsplanerApp : Application() {
-    /** The only place that asks for "now", so every screen shares one clock. */
-    val clock: Clock = Clock.systemDefaultZone()
+    /**
+     * The only place that asks for "now", so every screen shares one clock. It follows the phone's
+     * time zone, also after a flight with the app still in memory.
+     */
+    val clock: Clock = PhoneClock()
 
     val database by lazy { UrlaubsplanerDatabase.create(this) }
 

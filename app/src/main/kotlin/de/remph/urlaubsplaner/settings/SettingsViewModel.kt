@@ -61,10 +61,14 @@ class SettingsViewModel(
     /** Called after a backup replaced all data, so the home screen widgets are drawn again. */
     private val onDataReplaced: () -> Unit = {},
 ) : ViewModel() {
+    // The app can stay in memory over New Year, so the year is read again when it comes back to
+    // the front (refreshYear), like the planner's "today", and not only when this is made.
+    private val thisYear = MutableStateFlow(LocalDate.now(clock).year)
+
     /** The year the page starts on, and the one the settings list shows. */
-    val currentYear = LocalDate.now(clock).year
+    val currentYear: Int get() = thisYear.value
     private val firstYear = PublicHolidays.FIRST_SUPPORTED_YEAR
-    private val lastYear = currentYear + 1
+    private val lastYear: Int get() = currentYear + 1
 
     private val selectedYear = MutableStateFlow(currentYear)
     private val edits = MutableStateFlow(Edits(currentYear))
@@ -105,6 +109,8 @@ class SettingsViewModel(
                 }
             }.combine(edits) { base, typed -> base to typed.takeIf { it.year == base.year } }
             .combine(notice) { (base, edits), notice -> Triple(base, edits, notice) }
+            // Only to build the state again when the year turns: the arrows depend on it.
+            .combine(thisYear) { parts, _ -> parts }
             .combine(pendingImport) { (base, edits, notice), plan ->
                 buildState(base, edits ?: Edits(base.year), notice, plan)
             }.combine(backupStatus.state) { ui, status -> ui.copy(lastBackup = status.lastBackup) }
@@ -183,6 +189,11 @@ class SettingsViewModel(
             pendingImport = plan,
             notice = notice,
         )
+    }
+
+    /** Reads the date again; the screen calls it when the app comes back to the front. */
+    fun refreshYear() {
+        thisYear.value = LocalDate.now(clock).year
     }
 
     // Settings: saved at once.
