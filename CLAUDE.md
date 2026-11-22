@@ -3,7 +3,7 @@
 Personal, non-profit Android app for planning the year's vacation in Germany: holidays, school
 holidays, vacation balance and bridge days, status first. The maintainer's own phone, used on the go.
 Local-first, no backend for the MVP. Gradle with `:core` and `:app`; the MVP features are built
-(M0 to M4), M5 is polish, M6 release prep. The plan and milestones are in `docs/plan.md`.
+(M0 to M6) and 1.0.0 is released (2026-11-17). The plan and milestones are in `docs/plan.md`.
 
 ## Decided
 - Android first; no web app for now. Distribution: F-Droid preferred, Google Play optional.
@@ -43,7 +43,8 @@ Local-first, no backend for the MVP. Gradle with `:core` and `:app`; the MVP fea
 - `README.md`: what the app does and how to build it.
 - `docs/`: `plan.md` (layout, build settings, milestones), `data-sources.md`, `milestone-0.10.0.md`
   (how an integration branch `release/<version>` works: PR base, order, syncing `main` into it),
-  `milestone-0.11.0.md` (the current milestone: scope, threads, release steps; 1.0.0 candidates).
+  `milestone-0.11.0.md` (the last milestone file: scope, threads, release steps), `release.md`
+  (release steps), `dev-setup.md`, `baseline-profile.md`.
 - Check facts that change over time (store rules, data sources, API terms, Google's developer
   verification) with search and write the date next to what you found.
 
@@ -89,8 +90,7 @@ the maintainer (Project settings > Cloud environment > Network access) instead o
 
 ## Git
 - Never push to `main` or any deploy branch (`main` and the `release/<version>` integration
-  branches, today `release/0.10.0` and `release/0.11.0`). Never force-push. Work goes to a feature
-  branch and a PR that the maintainer merges.
+  branches). Never force-push. Work goes to a feature branch and a PR that the maintainer merges.
 - Why it is written down: project cloud threads do not apply the allow/deny rules or hooks in
   `.claude/settings.json`, and auto mode allows a push to `main`. This rule is the only guard
   there; the deny list stays for sessions outside project threads and on the maintainer's PC.
@@ -105,11 +105,14 @@ the maintainer (Project settings > Cloud environment > Network access) instead o
 - Never commit keystores, `local.properties`, tokens or Google service files.
 - No tags or releases unless the maintainer asks. The repo has no deploy.
 
-## Checks (no CI on pull requests)
-GitHub does not check pull requests (the free Actions minutes are used up). Before reporting
-done, run the standard check (and the format check) and list each command with its result in the
-PR description (`.github/pull_request_template.md`); say plainly which checks could not run and
-why. A review runs them again. A docs-only PR says "no code, no checks".
+## Checks
+GitHub runs the standard check (`.github/workflows/check.yml`: lint, unit tests, debug APK, format
+check) on every pull request and on `main`. A thread still runs the standard check itself before
+reporting ready and lists each command with its result in the PR description
+(`.github/pull_request_template.md`); say plainly which checks could not run and why. A review reads
+the GitHub run and runs the checks again. Device tests (`connectedDebugAndroidTest`) need an
+emulator and stay on the maintainer's PC. A docs-only PR says "no code, no checks" (the GitHub run
+still happens). The workflow has no secrets and builds no release.
 
 ## Reviews
 - Every code feature or fix gets an independent review in a new thread before the maintainer merges

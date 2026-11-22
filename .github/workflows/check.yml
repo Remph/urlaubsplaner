@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Remph
+
+# The standard check from CLAUDE.md ("Commands"), run on every pull request and on main. No
+# secrets and no signing: it builds the debug APK only. Device tests (connectedDebugAndroidTest)
+# need an emulator and stay on the maintainer's PC.
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same branch makes the older run pointless.
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      # The JDK of the cloud and the maintainer's PC; the bytecode target stays 17 (build files).
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # The runner image ships an Android SDK; this makes sure the two packages the build needs
+      # (compileSdk and build-tools in app/build.gradle.kts) are there and the licences accepted,
+      # whatever the image has today.
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;37.0.0"
+
+      - name: Standard check
+        run: ./gradlew lint test assembleDebug spotlessCheck
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: |
+            **/build/reports/lint-results-*
+            **/build/reports/tests
+            **/build/test-results
+          if-no-files-found: ignore
+          retention-days: 14
