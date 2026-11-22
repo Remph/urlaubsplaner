@@ -37,6 +37,7 @@ import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.balance.DayMark
 import de.remph.urlaubsplaner.core.balance.WorkSchedule
 import de.remph.urlaubsplaner.core.bridge.Bridge
+import de.remph.urlaubsplaner.ui.Card
 import java.time.LocalDate
 import java.time.MonthDay
 import java.util.Locale

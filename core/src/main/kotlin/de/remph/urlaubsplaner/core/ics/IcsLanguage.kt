@@ -24,9 +24,17 @@ enum class IcsLanguage {
          * English, so the file is too; with no German or English in the list it is German.
          */
         fun of(locales: List<Locale>): IcsLanguage =
-            when (locales.firstOrNull { it.language == "en" || it.language == "de" }?.language) {
+            when (firstSupported(locales)?.language) {
                 "en" -> ENGLISH
                 else -> GERMAN
             }
+
+        /**
+         * The first locale in [locales] whose language the app has texts for, or null. The one
+         * place of the rule "first German or English language, else German" (the caller picks the
+         * fallback); the widget uses it too, so the file, the widget and the screens agree.
+         */
+        fun firstSupported(locales: List<Locale>): Locale? =
+            locales.firstOrNull { it.language == "en" || it.language == "de" }
     }
 }

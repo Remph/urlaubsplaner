@@ -156,10 +156,21 @@ class BridgeFinder(
         marks: Map<LocalDate, DayMark> = emptyMap(),
         maxCost: VacationDays = VacationDays.of(2),
     ): List<Bridge> {
-        require(limit >= 0) { "The number of bridges cannot be negative" }
         val today = LocalDate.now(clock)
-        return find(year, marks, maxCost)
-            .filter { it.leave.first() > today }
+        return rank(find(year, marks, maxCost).filter { it.leave.first() > today }, limit)
+    }
+
+    /**
+     * The best [limit] of [upcoming] bridges (found by [find] and already cut to those still to
+     * come): most days off per vacation day first, the earlier one on a tie. For a caller that
+     * has the list already and must not search a second time.
+     */
+    fun rank(
+        upcoming: List<Bridge>,
+        limit: Int = 3,
+    ): List<Bridge> {
+        require(limit >= 0) { "The number of bridges cannot be negative" }
+        return upcoming
             .sortedWith(
                 compareByDescending<Bridge> { it.daysOffPerVacationDay }.thenBy { it.start },
             ).take(limit)

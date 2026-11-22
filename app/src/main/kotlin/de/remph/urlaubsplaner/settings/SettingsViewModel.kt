@@ -91,9 +91,7 @@ class SettingsViewModel(
                     repository.observeMarks(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31)),
                 ) { settings, stored, previous, previousMarks, yearMarks ->
                     val suggestion =
-                        if (stored ==
-                            null
-                        ) {
+                        if (stored == null) {
                             suggestion(settings, year, previous, previousMarks)
                         } else {
                             null
@@ -102,8 +100,7 @@ class SettingsViewModel(
                         year,
                         settings,
                         stored ?: suggestion,
-                        isSuggestion =
-                            stored == null && suggestion != null,
+                        isSuggestion = stored == null && suggestion != null,
                         markedDays = yearMarks.size,
                     )
                 }

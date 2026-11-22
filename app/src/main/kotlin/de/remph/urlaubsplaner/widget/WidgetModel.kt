@@ -92,6 +92,8 @@ sealed interface WidgetModel {
             val overbooked = remaining < VacationDays.ZERO
             val trip = status.nextTrip
             val dayPattern = context.getString(R.string.widget_day_pattern)
+            val taken = text(status.balance.taken, locale)
+            val planned = text(status.balance.planned, locale)
             val summary =
                 when {
                     trip == null -> {
@@ -179,12 +181,8 @@ sealed interface WidgetModel {
                 tripCost = cost,
                 figures =
                     listOf(
-                        "${context.getString(
-                            R.string.taken,
-                        )} ${text(status.balance.taken, locale)}",
-                        "${context.getString(
-                            R.string.planned,
-                        )} ${text(status.balance.planned, locale)}",
+                        "${context.getString(R.string.taken)} $taken",
+                        "${context.getString(R.string.planned)} $planned",
                         "${context.getString(R.string.of_total)} ${text(status.total, locale)}",
                     ),
                 warning = warning,

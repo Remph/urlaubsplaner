@@ -76,7 +76,7 @@ class YearView(
     /** The best few bridges, grouped under the holiday they belong to, for the overview. */
     val bridgeGroups: List<BridgeGroup> =
         if (bridgeFinder != null) {
-            bridgeFinder.best(year, BEST_BRIDGES, marks).groupedByAnchor()
+            bridgeFinder.rank(upcomingBridges, BEST_BRIDGES).groupedByAnchor()
         } else {
             emptyList()
         }

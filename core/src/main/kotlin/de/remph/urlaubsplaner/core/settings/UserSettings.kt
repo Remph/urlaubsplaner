@@ -62,8 +62,7 @@ data class UserSettings(
         val land = land ?: return null
         val years = ConcurrentHashMap<Int, Set<LocalDate>>()
         return { date ->
-            date in
-                years.getOrPut(date.year) { publicHolidays(date.year).map { it.date }.toSet() }
+            date in years.getOrPut(date.year) { publicHolidays(date.year).map { it.date }.toSet() }
         }
     }
 }

@@ -4,6 +4,7 @@
 package de.remph.urlaubsplaner.widget
 
 import android.app.AlarmManager
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -22,6 +23,19 @@ import java.time.ZoneId
 class MidnightAlarmTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val alarms get() = shadowOf(context.getSystemService(AlarmManager::class.java))
+
+    // Glance's own update needs a real broadcast (goAsync); it is not what is tested here, and its
+    // background job would fail with an uncaught exception that lands in a later test.
+    private fun receiver() =
+        object : WidgetReceiver() {
+            override val glanceAppWidget = UrlaubsplanerWidget()
+
+            override fun onUpdate(
+                context: Context,
+                appWidgetManager: AppWidgetManager,
+                appWidgetIds: IntArray,
+            ) = Unit
+        }
 
     private fun cancelAlarm() =
         context
@@ -102,14 +116,14 @@ class MidnightAlarmTest {
         for (action in listOf(Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED)) {
             cancelAlarm()
 
-            UrlaubsplanerWidgetReceiver().onReceive(context, Intent(action))
+            receiver().onReceive(context, Intent(action))
 
             assertEquals(action, 1, alarms.scheduledAlarms.size)
         }
 
         // The start of the process does it (UrlaubsplanerApp.onCreate); the receiver adds nothing.
         cancelAlarm()
-        UrlaubsplanerBigWidgetReceiver().onReceive(context, Intent(Intent.ACTION_BOOT_COMPLETED))
+        receiver().onReceive(context, Intent(Intent.ACTION_BOOT_COMPLETED))
         assertTrue(alarms.scheduledAlarms.isEmpty())
     }
 }

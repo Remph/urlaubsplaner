@@ -350,6 +350,16 @@ class BridgeFinderTest {
         assertTrue(finder(holidays2026).best(2026, limit = 0).isEmpty())
     }
 
+    @Test
+    fun `rank orders a list that is already found like best does`() {
+        val finder = finder(holidays2026, today = d(6, 1))
+        val upcoming = finder.find(2026).filter { it.leave.first() > d(6, 1) }
+
+        assertEquals(finder.best(2026, limit = 3), finder.rank(upcoming, limit = 3))
+        assertTrue(finder.rank(upcoming, limit = 0).isEmpty())
+        assertThrows(IllegalArgumentException::class.java) { finder.rank(upcoming, limit = -1) }
+    }
+
     // --- bad input ---
 
     @Test

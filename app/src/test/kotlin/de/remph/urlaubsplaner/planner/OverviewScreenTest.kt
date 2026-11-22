@@ -23,6 +23,7 @@ import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.balance.YearEntitlement
 import de.remph.urlaubsplaner.core.holidays.Bundesland
 import de.remph.urlaubsplaner.core.settings.UserSettings
+import de.remph.urlaubsplaner.ui.LocalCompositionProbe
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals

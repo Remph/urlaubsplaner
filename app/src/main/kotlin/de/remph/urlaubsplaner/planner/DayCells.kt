@@ -336,7 +336,14 @@ private fun DayCell(
             else -> scheme.onSurface
         }
     val fillTarget = if (role != null) rangeFill(role, look, colors, scheme, ownFill) else ownFill
-    val textTarget = if (role != null) rangeText(role, look, colors, scheme, ownText) else ownText
+    val textTarget =
+        if (role !=
+            null
+        ) {
+            rangeTextColor(role, look, colors, scheme, ownText)
+        } else {
+            ownText
+        }
     // Marking or removing a day fades the tile instead of flipping it. Compose follows Android's
     // "Remove animations" setting, so with it on the colours change at once.
     val fill by animateColorAsState(fillTarget, DayFade, label = "dayFill")

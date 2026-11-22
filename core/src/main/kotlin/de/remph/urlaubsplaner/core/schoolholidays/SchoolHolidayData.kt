@@ -40,11 +40,7 @@ class SchoolHolidayData private constructor(
     fun on(
         land: Bundesland,
         date: LocalDate,
-    ): List<SchoolHoliday> =
-        holidaysOf(land).filter {
-            date in
-                it
-        }
+    ): List<SchoolHoliday> = holidaysOf(land).filter { date in it }
 
     /** The school holidays of [land] that overlap the days from [start] to [end] (inclusive). */
     fun between(
@@ -105,9 +101,7 @@ class SchoolHolidayData private constructor(
             line: String,
         ): SchoolHoliday {
             val parts = line.split(';')
-            if (parts.size !=
-                5
-            ) {
+            if (parts.size != 5) {
                 fail(number, "expected 5 fields separated by ';', got ${parts.size}")
             }
             val land = Bundesland.fromCode(parts[0]) ?: fail(number, "unknown Land '${parts[0]}'")
@@ -120,9 +114,7 @@ class SchoolHolidayData private constructor(
 
         private fun parseCoverage(value: String): ClosedRange<LocalDate> {
             val ends = value.split("..")
-            if (ends.size !=
-                2
-            ) {
+            if (ends.size != 2) {
                 throw SchoolHolidayFormatException("Bad 'covers' (want from..to): $value")
             }
             val from = parseDate("header", ends[0])

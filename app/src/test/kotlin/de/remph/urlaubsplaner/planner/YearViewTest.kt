@@ -188,9 +188,8 @@ class YearViewTest {
             )
         // Christi Himmelfahrt 2019 was Thursday 30 May in NRW, so Friday the 31st is a bridge.
         assertTrue(first.upcomingBridges.any { it.leave == listOf(fixture.date("2019-05-31")) })
-        // The groups for the overview are made when the view is built; the fixture clock is in 2027,
-        // so none of 2019 is "best" any more, but building them did not throw.
-        assertTrue(first.bridgeGroups.isEmpty())
+        // The overview's groups are ranked from the same list, with the view's own "today".
+        assertTrue(first.bridgeGroups.isNotEmpty())
     }
 
     @Test

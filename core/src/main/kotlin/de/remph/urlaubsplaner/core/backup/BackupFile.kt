@@ -118,8 +118,8 @@ object BackupFile {
                         data.entitlements.sortedBy { it.year }.map { entitlement ->
                             buildJsonObject {
                                 put("year", entitlement.year)
-                                put("halfDays", entitlement.days.halfDays())
-                                put("carryOverHalfDays", entitlement.carryOver.halfDays())
+                                put("halfDays", entitlement.days.halves)
+                                put("carryOverHalfDays", entitlement.carryOver.halves)
                                 put("carryOverExpiry", entitlement.carryOverExpiry.toString())
                                 put("carryOverExpiryYears", entitlement.carryOverExpiryYears)
                             }
@@ -231,7 +231,7 @@ object BackupFile {
                     settings.schedule.specialDays.entries.sortedBy { it.key }.map { (day, value) ->
                         buildJsonObject {
                             put("day", day.toString())
-                            put("halfDays", value.halfDays())
+                            put("halfDays", value.halves)
                         }
                     },
                 ),
@@ -348,8 +348,6 @@ object BackupFile {
         when (this) {
             RegionalOptOut.MARIAE_HIMMELFAHRT_BAYERN -> "mariae-himmelfahrt-bayern"
         }
-
-    private fun VacationDays.halfDays() = (days * 2).toInt()
 
     // Reading helpers: every failure names the place in the file.
 

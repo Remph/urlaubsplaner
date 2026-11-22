@@ -59,6 +59,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.backup.BackupHint
 import de.remph.urlaubsplaner.core.balance.VacationDays
+import de.remph.urlaubsplaner.ui.Card
+import de.remph.urlaubsplaner.ui.EmptyState
+import de.remph.urlaubsplaner.ui.LocalCompositionProbe
+import de.remph.urlaubsplaner.ui.ScreenFrame
 import de.remph.urlaubsplaner.ui.rememberAnimationsRemoved
 import java.time.LocalDate
 import java.time.YearMonth
@@ -103,40 +107,6 @@ fun OverviewScreen(
             else -> {
                 Status(shown, viewModel, onOpenBackup, onOpenMonth, onShowDate)
             }
-        }
-    }
-}
-
-@Composable
-fun ScreenFrame(
-    outerPadding: PaddingValues,
-    scrollState: ScrollState = rememberScrollState(),
-    content: @Composable () -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(outerPadding)
-                .consumeWindowInsets(outerPadding)
-                .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        content()
-    }
-}
-
-@Composable
-fun EmptyState(
-    text: String,
-    buttonText: Int,
-    onClick: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(text, style = MaterialTheme.typography.bodyLarge)
-        Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(buttonText))
         }
     }
 }
@@ -330,12 +300,6 @@ private fun CountUpText(
     )
 }
 
-/**
- * For tests: called with a screen's name each time it composes, so a test can count how often the
- * overview composes during the intro. Null (and nothing called) in the app.
- */
-internal val LocalCompositionProbe = staticCompositionLocalOf<((String) -> Unit)?> { null }
-
 internal fun VacationDays.countedUp(progress: Float) =
     if (progress >= 1f) this else VacationDays.ofHalves((days * 2 * progress).roundToInt())
 
@@ -397,22 +361,6 @@ private fun CarryOverWarning(
                 stringResource(R.string.carry_over_warning, open.text(locale), expiry),
                 style = MaterialTheme.typography.bodyLarge,
             )
-        }
-    }
-}
-
-@Composable
-internal fun Card(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            content()
         }
     }
 }
