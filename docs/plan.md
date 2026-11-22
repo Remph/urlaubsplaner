@@ -371,8 +371,17 @@ folder); the logic is `:core.widget.WidgetStatus` (unit-tested), the rest is `:a
 - Refresh: while the app process lives, `WidgetRefresher` watches the three tables (debounced
   500 ms) and redraws; the app also redraws after a language change and a configuration change.
   Glance keeps a session for about a minute and then only refreshes the widget's state, not its data, so each redraw also raises `WidgetRefresher.revision` and `liveModel` reads the data again (found in the review).
-  The date changes through `DATE_CHANGED`, `TIME_SET`, `TIMEZONE_CHANGED` in the receiver and
-  `updatePeriodMillis` 30 minutes as the safety net.
+  The date: since the tech audit round after 1.0.0 (finding 08) `MidnightAlarm` sets one inexact,
+  non-wake-up alarm (`AlarmManager.set` with `RTC`, no permission) for a minute after the next local
+  midnight; `MidnightReceiver` draws the widgets and sets the next one. The alarm is set again at
+  every process start (`UrlaubsplanerApp.onCreate`, which the first widget update after a reboot
+  causes, and the boot broadcast), and by the receivers on `TIME_SET` and `TIMEZONE_CHANGED`.
+  `DATE_CHANGED` is gone from the manifest: Android does not deliver it to a manifest receiver.
+  `updatePeriodMillis` is 4 hours, only the safety net (it was 30 minutes: 48 wake-ups a day, each
+  drawing twice in a process the system had ended). The data watch starts when `MainActivity` is
+  made, not in `Application.onCreate`, so a process started only for a widget broadcast draws once.
+  Device check before a release: widget on the home screen, clock set to 23:59, the new day shows
+  within a few minutes; also after a reboot.
   Since 0.11.1 (parked item 7) `redraw` takes the placed widget ids from `AppWidgetManager` and
   updates each by `getGlanceIdBy`, not through `updateAll`: Glance's own receiver list is lost with
   "Clear data". A widget that fails is logged and skipped, so the watch cannot die. A restored

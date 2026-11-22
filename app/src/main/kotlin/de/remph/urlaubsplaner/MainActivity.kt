@@ -40,6 +40,10 @@ class MainActivity : AppCompatActivity() {
         // Our bar reaches under the system bar, so without the scrim it is one colour.
         window.isNavigationBarContrastEnforced = false
         val app = application as UrlaubsplanerApp
+        // The widget watches the data while the app is open, and the watch draws it once at its
+        // start. Not from the Application: a process that a widget broadcast started would draw
+        // twice then, here and in the broadcast's own update.
+        if (app.widgetRefresher.hasWidgets()) app.widgetRefresher.start()
         setContent {
             val appearance by app.appearanceStore.state.collectAsStateWithLifecycle()
             UrlaubsplanerTheme(appearance) {

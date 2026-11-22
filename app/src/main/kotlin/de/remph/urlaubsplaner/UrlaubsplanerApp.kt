@@ -13,6 +13,7 @@ import de.remph.urlaubsplaner.data.SchoolHolidayAsset
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
 import de.remph.urlaubsplaner.data.UserDataRepository
 import de.remph.urlaubsplaner.settings.CalendarExporter
+import de.remph.urlaubsplaner.widget.MidnightAlarm
 import de.remph.urlaubsplaner.widget.WidgetRefresher
 import java.time.Clock
 
@@ -48,13 +49,18 @@ class UrlaubsplanerApp : Application() {
 
     val widgetRefresher by lazy { WidgetRefresher(this, database) }
 
+    val midnightAlarm by lazy { MidnightAlarm(this, clock) }
+
     override fun onCreate() {
         super.onCreate()
         OrientationPolicy.install(this)
         // AppCompat does not remember the light/dark choice, so it is handed over at every start.
         appearanceStore.applyNightMode()
-        // The widget is drawn from here too: it lives in this process while the app does.
-        if (widgetRefresher.hasWidgets()) widgetRefresher.start()
+        if (widgetRefresher.hasWidgets()) {
+            // The widget must show the new day after midnight; a phone forgets alarms at a reboot,
+            // and every start of the process (the first widget update after the boot is one) sets it.
+            midnightAlarm.schedule()
+        }
     }
 
     // The app language and the phone's light or dark mode arrive as a configuration change; the

@@ -13,10 +13,15 @@
          The maintainer chose on 2026-11-21 to keep it this way: it is the user's own data going to
          the user's own new phone and helps when moving. Adding dataExtractionRules with a
          device-transfer section that excludes everything would make every phone behave the same.
-         The app asks for no permission itself, and never for INTERNET; the four in the
-         merged manifest (wake lock, network state, boot completed, foreground service) come from
-         WorkManager, which the widget library brings (merged manifest read on 2026-10-26; read it
-         again when a library is added). -->
+         The app asks for no permission itself except the boot broadcast below, and never for
+         INTERNET; the four in the merged manifest (wake lock, network state, boot completed,
+         foreground service) come from WorkManager, which the widget library brings (merged
+         manifest read on 2026-10-26; read it again when a library is added). The boot one is
+         declared here too, so the widget receivers get the boot broadcast whatever WorkManager
+         does; it is a normal permission the user is not asked about and it is in the merged
+         manifest anyway. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".UrlaubsplanerApp"
         android:allowBackup="false"
@@ -56,10 +61,12 @@
             </intent-filter>
         </activity>
 
-        <!-- The two home screen widgets, small (2x1) and big (4x2). The date and time broadcasts
-             redraw them when the day changes; whether Android delivers them to a manifest receiver
-             is not verified on a phone, so the provider's update period is the safety net. The
-             small one keeps the receiver name of the one widget that came before.
+        <!-- The two home screen widgets, small (2x1) and big (4x2). A change of time or time zone
+             redraws them, and MidnightReceiver below does it at the turn of the day (DATE_CHANGED
+             is not here: Android does not deliver it to a manifest receiver, tech audit 08). The
+             provider's update period is only the safety net. The boot broadcast is there so the
+             process starts after a reboot, which sets the midnight alarm again. The small one
+             keeps the receiver name of the one widget that came before.
              Not exported (parked item 11, 2026-11-13): every action here is sent by the system
              (the app widget service and the protected date, time and locale broadcasts), and
              such a receiver still gets them. Android's docs disagree with each other (the Glance
@@ -73,7 +80,7 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.intent.action.LOCALE_CHANGED" />
-                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
@@ -88,7 +95,7 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.intent.action.LOCALE_CHANGED" />
-                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
@@ -96,6 +103,12 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info_big" />
         </receiver>
+
+        <!-- The alarm that draws the widgets after midnight (MidnightAlarm); only our own explicit
+             PendingIntent starts it. -->
+        <receiver
+            android:name=".widget.MidnightReceiver"
+            android:exported="false" />
 
         <!-- Hands the calendar file to a calendar app, that one file only. -->
         <provider
