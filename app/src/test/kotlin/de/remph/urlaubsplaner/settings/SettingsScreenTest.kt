@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -638,6 +639,21 @@ class SettingsScreenTest {
             }.isSuccess
         }
         compose.onNodeWithContentDescription("Silvester (31.12.): Ganzer Tag").assertIsSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the work day buttons are touch targets of at least 48 dp`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Arbeitstage")
+
+        // The chips they replace had 48 dp (CLAUDE.md: touch targets of at least 48 dp).
+        compose.onNodeWithContentDescription("Montag").assertHeightIsAtLeast(48.dp)
+        compose
+            .onNodeWithContentDescription("Heiligabend (24.12.): Halber Tag")
+            .performScrollTo()
+            .assertHeightIsAtLeast(48.dp)
     }
 
     @Test

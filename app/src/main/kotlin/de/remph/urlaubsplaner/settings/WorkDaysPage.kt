@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MultiChoiceSegmentedButtonRow
@@ -56,7 +57,11 @@ fun WorkDaysPage(
                     shape = SegmentedButtonDefaults.itemShape(index, DayOfWeek.entries.size),
                     icon = {},
                     contentPadding = PaddingValues(0.dp),
-                    modifier = Modifier.semantics { contentDescription = description },
+                    // 48 dp like the chips before: the segmented button itself is 40 dp high.
+                    modifier =
+                        Modifier
+                            .heightIn(min = 48.dp)
+                            .semantics { contentDescription = description },
                 ) { Text(day.shortText(locale), maxLines = 1) }
             }
         }
@@ -103,6 +108,7 @@ private fun SpecialDay(
                 icon = {},
                 modifier =
                     Modifier
+                        .heightIn(min = 48.dp)
                         .fillMaxHeight()
                         .semantics { contentDescription = description },
             ) { Text(text, textAlign = TextAlign.Center) }
