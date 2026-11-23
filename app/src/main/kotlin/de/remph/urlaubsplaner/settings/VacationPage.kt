@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -125,7 +126,9 @@ fun VacationPage(
             modifier = Modifier.fillMaxWidth(),
         )
         // Day and year share a line: the field is the shorter part, the year is a two-way choice.
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // At a large font the line is too narrow for the label, so each gets its own line.
+        val stacked = LocalDensity.current.fontScale >= STACK_FONT_SCALE
+        val expiryField: @Composable (Modifier) -> Unit = { fieldModifier ->
             AmountField(
                 label = stringResource(R.string.field_carry_over_expiry),
                 value =
@@ -135,14 +138,25 @@ fun VacationPage(
                 error = stringResource(R.string.error_expiry),
                 placeholder = stringResource(R.string.field_expiry_format),
                 onChange = viewModel::editExpiry,
-                modifier = Modifier.weight(0.45f),
+                modifier = fieldModifier,
             )
+        }
+        val yearChoice: @Composable (Modifier) -> Unit = { choiceModifier ->
             ExpiryYearChoice(
                 year = ui.year,
                 selected = form.typedExpiryYears ?: form.base?.expiryYears ?: 0,
                 onSelect = viewModel::editExpiryYears,
-                modifier = Modifier.weight(0.55f),
+                modifier = choiceModifier,
             )
+        }
+        if (stacked) {
+            expiryField(Modifier.fillMaxWidth())
+            yearChoice(Modifier.fillMaxWidth())
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                expiryField(Modifier.weight(0.45f))
+                yearChoice(Modifier.weight(0.55f))
+            }
         }
         Button(
             onClick = viewModel::saveEntitlement,
@@ -258,3 +272,6 @@ private fun ExpiryYearChoice(
         }
     }
 }
+
+/** From this font scale on the expiry field and the year choice are stacked, not side by side. */
+private const val STACK_FONT_SCALE = 1.3f

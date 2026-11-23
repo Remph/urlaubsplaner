@@ -28,7 +28,7 @@ aller 16 Bundesländer. Deine Daten bleiben auf deinem Telefon.
   Urlaubstage eines ganzen Jahres auf einmal löschen.
 - **Brückentage:** Die App schlägt vor, an welchen Tagen sich ein Urlaubstag besonders lohnt.
 - **Nächster Feiertag:** Ein Tipp in der Übersicht öffnet den Kalender und zeigt den Tag.
-- **Kalender-Export (ICS)** für jede Kalender-App.
+- **Kalenderexport (ICS)** für jede Kalender-App.
 - **Zwei Widgets** für den Startbildschirm: nächster Urlaub und verbleibende Tage.
 - **Sicherung:** Du speicherst eine Sicherungsdatei, wohin du willst, und stellst sie später
   wieder her, zum Beispiel auf einem neuen Telefon. Ist die letzte Sicherung über drei Monate her,
@@ -53,7 +53,7 @@ nicht gegenseitig aktualisieren. Wer von einer zur anderen wechselt, sichert vor
 ## Datenschutz
 
 Die App hat keine Internetberechtigung, kein Konto, keine Werbung und keine Auswertung. Alles
-liegt lokal auf dem Telefon. Die Sicherungsdatei und der Kalender-Export gehen nur dorthin, wohin du
+liegt lokal auf dem Telefon. Die Sicherungsdatei und der Kalenderexport gehen nur dorthin, wohin du
 sie selbst speicherst oder schickst. Die App macht bei der Google-Cloud-Sicherung nicht mit. Beim
 Wechsel auf ein neues Telefon können die Übertragungsprogramme mancher Hersteller die App-Daten
 trotzdem mitkopieren (Google schreibt, dass seine Abmeldung davon dort nicht immer schützt). Das

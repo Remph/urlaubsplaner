@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -42,6 +43,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.remph.urlaubsplaner.R
 
@@ -131,7 +134,7 @@ fun SettingsRow(
                 if (value.isNotEmpty()) {
                     Text(
                         value,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium.copy(hyphens = Hyphens.Auto),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -168,7 +171,13 @@ fun ChoiceRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = null)
-        Text(label, modifier = Modifier.padding(start = 16.dp))
+        // Auto hyphenation: "Mecklenburg-Vorpommern" breaks as "Vorpom-mern" at a large font,
+        // not in the middle of the word without a sign.
+        Text(
+            label,
+            modifier = Modifier.padding(start = 16.dp),
+            style = LocalTextStyle.current.copy(hyphens = Hyphens.Auto),
+        )
     }
 }
 
@@ -179,7 +188,11 @@ fun SwitchRow(
     support: String,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
 ) {
+    // A switch that cannot be used now keeps its value but reads as off-limits.
+    val ink = MaterialTheme.colorScheme.onSurface
+    val soft = MaterialTheme.colorScheme.onSurfaceVariant
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -190,21 +203,30 @@ fun SwitchRow(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = 56.dp)
-                    .toggleable(value = checked, onValueChange = onChange, role = Role.Switch)
-                    .padding(horizontal = 16.dp),
+                    .toggleable(
+                        value = checked,
+                        enabled = enabled,
+                        onValueChange = onChange,
+                        role = Role.Switch,
+                    ).padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f).padding(vertical = 12.dp)) {
-                Text(label, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (enabled) ink else ink.copy(alpha = DISABLED_ALPHA),
+                )
                 Text(
                     support,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (enabled) soft else soft.copy(alpha = DISABLED_ALPHA),
                 )
             }
             Switch(
                 checked = checked,
                 onCheckedChange = null,
+                enabled = enabled,
                 modifier = Modifier.padding(start = 16.dp),
             )
         }
@@ -224,7 +246,8 @@ fun AmountField(
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
-        label = { Text(label) },
+        // One line: a label that wraps sticks out of the outline at a large font.
+        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         placeholder = placeholder?.let { { Text(it) } },
         isError = isError,
         supportingText = if (isError) ({ Text(error) }) else null,
@@ -235,3 +258,5 @@ fun AmountField(
         modifier = modifier,
     )
 }
+
+private const val DISABLED_ALPHA = 0.38f

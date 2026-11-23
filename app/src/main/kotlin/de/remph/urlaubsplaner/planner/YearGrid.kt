@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -36,8 +37,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import de.remph.urlaubsplaner.R
+import java.time.Month
 import java.time.YearMonth
 import java.time.format.TextStyle
 
@@ -50,10 +55,21 @@ fun YearGrid(
     view: YearView,
     onMonthClick: (YearMonth) -> Unit,
     modifier: Modifier = Modifier,
-    rowHeight: androidx.compose.ui.unit.Dp = 20.dp,
+    rowHeight: Dp = 20.dp,
 ) {
     val colors = dayColors()
     val locale = currentLocale()
+    val labelStyle = MaterialTheme.typography.labelSmall
+    val monthNames =
+        remember(locale) {
+            (1..12).map {
+                Month.of(it).getDisplayName(TextStyle.SHORT, locale).trimEnd('.')
+            }
+        }
+    val labelBox = monthLabelBox(monthNames, labelStyle)
+    // At a large font the label is taller than the row: the row grows with it, and the canvas
+    // with it, so the tiles stay level with their month name.
+    val rowHeight = maxOf(rowHeight, labelBox.height)
     val ink = MaterialTheme.colorScheme.onSurface
     val faint = ink.copy(alpha = 0.07f)
     val smallCorner = MaterialTheme.shapes.extraSmall.topStart
@@ -68,10 +84,7 @@ fun YearGrid(
     // The canvas is one touch area, so TalkBack gets one action per month instead.
     val monthActions =
         (1..12).map { month ->
-            val name =
-                java.time.Month
-                    .of(month)
-                    .getDisplayName(TextStyle.FULL_STANDALONE, locale)
+            val name = Month.of(month).getDisplayName(TextStyle.FULL_STANDALONE, locale)
             CustomAccessibilityAction(name) {
                 onMonthClick(YearMonth.of(view.year, month))
                 true
@@ -84,16 +97,12 @@ fun YearGrid(
         },
     ) {
         Column {
-            for (month in 1..12) {
+            for (name in monthNames) {
                 Text(
-                    text =
-                        java.time.Month
-                            .of(month)
-                            .getDisplayName(TextStyle.SHORT, locale)
-                            .trimEnd('.'),
-                    style = MaterialTheme.typography.labelSmall,
+                    text = name,
+                    style = labelStyle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(32.dp).height(rowHeight),
+                    modifier = Modifier.width(labelBox.width).height(rowHeight),
                     maxLines = 1,
                 )
             }
@@ -163,6 +172,44 @@ fun YearGrid(
         }
     }
 }
+
+/**
+ * The size of the month label column: as wide as the widest month name really is, and as high as
+ * one line of the label style at the current font scale.
+ */
+@Composable
+private fun monthLabelBox(
+    names: List<String>,
+    style: androidx.compose.ui.text.TextStyle,
+): DpSize {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(names, style, density, measurer) {
+        val sizes = names.map { measurer.measure(it, style, maxLines = 1).size }
+        with(density) {
+            DpSize(
+                // The label is never cut and never wider than a seventh of a phone's width.
+                minOf(
+                    maxOf(MONTH_LABEL_MIN, sizes.maxOf { it.width }.toDp() + MONTH_LABEL_GAP),
+                    MONTH_LABEL_MAX,
+                ),
+                // One line of the style, scaled linearly with the font (sp.toDp() follows the
+                // system's flatter curve at 200 % and came out 4 dp short of the drawn line).
+                if (style.lineHeight.isSp) {
+                    (style.lineHeight.value * density.fontScale).dp
+                } else {
+                    sizes
+                        .maxOf { it.height }
+                        .toDp()
+                },
+            )
+        }
+    }
+}
+
+private val MONTH_LABEL_MIN = 32.dp
+private val MONTH_LABEL_GAP = 4.dp
+private val MONTH_LABEL_MAX = 56.dp
 
 /** The row height of the year grid when it is compact; expanded it fits the screen, see [expandedRowHeight]. */
 val YearRowsCompact = 28.dp

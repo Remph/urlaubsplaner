@@ -210,7 +210,7 @@ class WidgetModelTest {
                 status(settings = UserSettings()),
                 LanguageChoice.ENGLISH,
             ) as WidgetModel.Prompt
-        assertEquals("Choose state", english.title)
+        assertEquals("Choose federal state", english.title)
         assertEquals("Then the widget shows your vacation.", english.subtitle)
     }
 

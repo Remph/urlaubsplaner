@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -34,6 +35,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.time.LocalDate
+import java.time.MonthDay
 
 /** Composes the real overview in German and English and looks at what it says. */
 @RunWith(AndroidJUnit4::class)
@@ -306,7 +308,13 @@ class OverviewScreenTest {
             fixture.repository.setGranted(listOf(fixture.date("2027-03-15")), true)
             fixture.repository.saveSettings(UserSettings(land = Bundesland.NORDRHEIN_WESTFALEN))
         }
-        compose.waitForIdle()
+        // The settings reach the screen through Room's flow: wait for the line to go.
+        compose.waitUntil(5_000) {
+            compose
+                .onAllNodesWithText("Davon genehmigt", substring = true)
+                .fetchSemanticsNodes()
+                .isEmpty()
+        }
         compose.onNodeWithText("Davon genehmigt", substring = true).assertDoesNotExist()
     }
 
@@ -344,5 +352,69 @@ class OverviewScreenTest {
         // The numbers still count up: they compose on their own, many times.
         assertTrue(composed.count { it == "CountUpText" } > 20)
         compose.onNodeWithText("33").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `one open day of Resturlaub says Tag and verfaellt`() {
+        fixture.fill()
+        runBlocking {
+            // 8 Resturlaub, 7 days marked before 31 March: 1 is still open.
+            fixture.repository.saveEntitlement(
+                YearEntitlement(2027, VacationDays.of(30), VacationDays.of(8), MonthDay.of(3, 31)),
+            )
+        }
+        show("verfällt am")
+
+        compose
+            .onNodeWithText(
+                "1 Tag Resturlaub verfällt am 31.03.2027. Plane ihn noch ein.",
+                substring = true,
+            ).assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `one open day of carry-over is singular in English`() {
+        fixture.fill()
+        runBlocking {
+            fixture.repository.saveEntitlement(
+                YearEntitlement(2027, VacationDays.of(30), VacationDays.of(8), MonthDay.of(3, 31)),
+            )
+        }
+        show("expires on")
+
+        compose
+            .onNodeWithText("1 carried-over day expires on Mar 31, 2027", substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the next holiday text starts where the next trip text starts`() {
+        fixture.fill()
+        show("Nächster Feiertag")
+
+        // The row is clipped to a rounded shape for its ripple; its text must not sit under the corner.
+        val holiday =
+            compose
+                .onNodeWithText("Nächster Feiertag", useUnmergedTree = true)
+                .getUnclippedBoundsInRoot()
+        val trip =
+            compose
+                .onNodeWithText("Nächster Urlaub", useUnmergedTree = true)
+                .getUnclippedBoundsInRoot()
+        assertEquals(trip.left.value, holiday.left.value, 0.5f)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `tomorrow's holiday says morgen`() {
+        fixture.close()
+        fixture = PlannerFixture(today = "2027-03-25")
+        fixture.fill()
+        show("Nächster Feiertag")
+
+        compose.onNodeWithText("26.03.2027, morgen").assertIsDisplayed()
     }
 }

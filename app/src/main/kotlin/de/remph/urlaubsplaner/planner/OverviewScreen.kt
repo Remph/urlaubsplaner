@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -44,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -53,7 +53,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.remph.urlaubsplaner.R
@@ -63,6 +65,7 @@ import de.remph.urlaubsplaner.ui.Card
 import de.remph.urlaubsplaner.ui.EmptyState
 import de.remph.urlaubsplaner.ui.LocalCompositionProbe
 import de.remph.urlaubsplaner.ui.ScreenFrame
+import de.remph.urlaubsplaner.ui.labelAutoSize
 import de.remph.urlaubsplaner.ui.rememberAnimationsRemoved
 import java.time.LocalDate
 import java.time.YearMonth
@@ -332,7 +335,7 @@ private fun Figure(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp),
+                autoSize = labelAutoSize(),
             )
         }
     }
@@ -358,7 +361,12 @@ private fun CarryOverWarning(
         ) {
             Icon(Icons.Filled.Warning, contentDescription = null)
             Text(
-                stringResource(R.string.carry_over_warning, open.text(locale), expiry),
+                pluralStringResource(
+                    R.plurals.carry_over_warning,
+                    open.pluralQuantity(),
+                    open.text(locale),
+                    expiry,
+                ),
                 style = MaterialTheme.typography.bodyLarge,
             )
         }
@@ -467,14 +475,19 @@ private fun NextHoliday(
     val next = view.settings.nextPublicHoliday(view.today) ?: return
     val days = ChronoUnit.DAYS.between(view.today, next.date).toInt()
     // The whole block is the button (opens the calendar on the holiday); the chevron says so.
+    // The row is clipped to a rounded shape for the ripple, so its text needs room inside the clip
+    // or the corner shaves the first letter. The room is taken back around the row (bleed), so the
+    // text still lines up with "Nächster Urlaub" above.
     Row(
         Modifier
+            .heightIn(min = 48.dp)
+            .bleed(CLIP_ROOM)
             .clip(MaterialTheme.shapes.medium)
             .clickable(
                 onClickLabel = stringResource(R.string.next_holiday_show),
                 role = Role.Button,
             ) { onShow(next.date) }
-            .heightIn(min = 48.dp)
+            .padding(CLIP_ROOM)
             .semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -507,3 +520,18 @@ private fun NextHoliday(
         )
     }
 }
+
+private val CLIP_ROOM = 8.dp
+
+/**
+ * Lets the content grow by [by] on every side without taking more room in the parent: the content
+ * is measured bigger and placed shifted back. It is the negative padding Compose does not have.
+ */
+private fun Modifier.bleed(by: Dp): Modifier =
+    layout { measurable, constraints ->
+        val grow = by.roundToPx()
+        val placeable = measurable.measure(constraints.offset(2 * grow, 2 * grow))
+        layout(placeable.width - 2 * grow, placeable.height - 2 * grow) {
+            placeable.place(-grow, -grow)
+        }
+    }

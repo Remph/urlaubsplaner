@@ -4,10 +4,15 @@
 package de.remph.urlaubsplaner.settings
 
 import android.os.Build
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.appearance.AppearanceStore
@@ -25,16 +30,21 @@ fun AppearancePage(
 ) {
     val appearance by store.state.collectAsStateWithLifecycle()
     SettingsPageFrame(stringResource(R.string.section_appearance), outerPadding, onBack) {
-        for (
-        (mode, label) in
-        listOf(
-            ThemeMode.SYSTEM to R.string.theme_system,
-            ThemeMode.LIGHT to R.string.theme_light,
-            ThemeMode.DARK to R.string.theme_dark,
-        )
-        ) {
-            ChoiceRow(stringResource(label), appearance.mode == mode) {
-                store.update { it.copy(mode = mode) }
+        // The three modes sit on a card like the switches below, and are one group for TalkBack.
+        SettingsGroup {
+            Column(Modifier.selectableGroup().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                for (
+                (mode, label) in
+                listOf(
+                    ThemeMode.SYSTEM to R.string.theme_system,
+                    ThemeMode.LIGHT to R.string.theme_light,
+                    ThemeMode.DARK to R.string.theme_dark,
+                )
+                ) {
+                    ChoiceRow(stringResource(label), appearance.mode == mode) {
+                        store.update { it.copy(mode = mode) }
+                    }
+                }
             }
         }
         SwitchRow(
@@ -42,6 +52,9 @@ fun AppearancePage(
             support = stringResource(R.string.theme_oled_support),
             checked = appearance.oled,
             onChange = { on -> store.update { it.copy(oled = on) } },
+            // "Im dunklen Modus": with Hell there is nothing to turn black. The value is kept,
+            // so choosing Dunkel again brings the black back.
+            enabled = appearance.mode != ThemeMode.LIGHT,
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             SwitchRow(

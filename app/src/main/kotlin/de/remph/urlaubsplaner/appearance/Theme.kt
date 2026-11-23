@@ -136,6 +136,10 @@ internal val FixedLight =
         surfaceContainer = Color(0xFFEEF1F4),
         surfaceContainerHigh = Color(0xFFE8ECF0),
         surfaceContainerHighest = Color(0xFFE3E8ED),
+        // The snackbar: Material's defaults are purple. A dark grey bar with a light teal action.
+        inverseSurface = Color(0xFF2B363F),
+        inverseOnSurface = Color(0xFFE3E8EC),
+        inversePrimary = Color(0xFF5CC6C9),
     )
 
 internal val FixedDark =
@@ -162,4 +166,8 @@ internal val FixedDark =
         surfaceContainer = Color(0xFF1B2228),
         surfaceContainerHigh = Color(0xFF222B32),
         surfaceContainerHighest = Color(0xFF2B363F),
+        // The snackbar in the dark theme: a light grey bar with the dark teal as its action.
+        inverseSurface = Color(0xFFE3E8EC),
+        inverseOnSurface = Color(0xFF16202A),
+        inversePrimary = Color(0xFF0E6F72),
     )

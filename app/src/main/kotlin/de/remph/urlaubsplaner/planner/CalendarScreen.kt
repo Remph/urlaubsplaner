@@ -637,7 +637,12 @@ private fun NoteRow(
     date: String,
     name: String,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // One stop for TalkBack: the name, then the date.
+    Row(
+        Modifier.semantics(mergeDescendants = true) {
+        },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Box(Modifier.size(16.dp).background(swatch, MaterialTheme.shapes.extraSmall))
         Column(Modifier.padding(start = 12.dp)) {
             Text(name, style = MaterialTheme.typography.bodyMedium)

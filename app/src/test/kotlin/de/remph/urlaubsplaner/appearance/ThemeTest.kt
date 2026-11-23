@@ -4,8 +4,11 @@
 package de.remph.urlaubsplaner.appearance
 
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import de.remph.urlaubsplaner.planner.MIN_TEXT_CONTRAST
+import de.remph.urlaubsplaner.planner.contrastRatio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -99,5 +102,38 @@ class ThemeTest {
         val colors = appColorScheme(true, Appearance(systemColors = false), null)
 
         assertEquals(FixedDark.background, colors.background)
+    }
+
+    // Material's own snackbar tokens are purple, and nothing else in the app is.
+    private val ownSchemes =
+        listOf(
+            "light" to appColorScheme(false, Appearance(systemColors = false), null),
+            "dark" to appColorScheme(true, Appearance(systemColors = false), null),
+            "pure black" to
+                appColorScheme(true, Appearance(systemColors = false, oled = true), null),
+        )
+
+    @Test
+    fun `the snackbar text and its action can be read on the bar in every own scheme`() {
+        for ((name, colors) in ownSchemes) {
+            assertTrue(
+                "$name text",
+                contrastRatio(colors.inverseOnSurface, colors.inverseSurface) >= MIN_TEXT_CONTRAST,
+            )
+            assertTrue(
+                "$name action",
+                contrastRatio(colors.inversePrimary, colors.inverseSurface) >= MIN_TEXT_CONTRAST,
+            )
+        }
+    }
+
+    @Test
+    fun `the snackbar does not use Material's purple`() {
+        for ((name, colors) in ownSchemes) {
+            val default = if (name == "light") lightColorScheme() else darkColorScheme()
+            assertNotEquals(name, default.inversePrimary, colors.inversePrimary)
+            assertNotEquals(name, default.inverseSurface, colors.inverseSurface)
+            assertNotEquals(name, default.inverseOnSurface, colors.inverseOnSurface)
+        }
     }
 }

@@ -5,19 +5,35 @@ package de.remph.urlaubsplaner.settings
 
 import android.content.Context
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -145,7 +161,7 @@ class SettingsScreenTest {
     fun `a fresh start in English has the English texts`() {
         show("Settings")
 
-        compose.onNodeWithText("Choose state").assertIsDisplayed()
+        compose.onNodeWithText("Choose federal state").assertIsDisplayed()
         compose.onNodeWithText("Language").assertIsDisplayed()
         compose.onNodeWithText("Backup").assertIsDisplayed()
     }
@@ -399,11 +415,11 @@ class SettingsScreenTest {
     @Config(qualifiers = "de")
     fun `the calendar export row only shows with a Land`() {
         show("Einstellungen")
-        compose.onNodeWithText("Kalender-Export").assertDoesNotExist()
+        compose.onNodeWithText("Kalenderexport").assertDoesNotExist()
 
         chooseLand(Bundesland.BAYERN, "Bayern")
 
-        compose.onNodeWithText("Kalender-Export").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Kalenderexport").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -421,7 +437,7 @@ class SettingsScreenTest {
         }
         show("Einstellungen")
         waitForText("Nordrhein-Westfalen")
-        openRow("Kalender-Export")
+        openRow("Kalenderexport")
 
         waitForText("1 Urlaub in der Datei")
         compose.onNodeWithText("In Kalender öffnen").assertIsEnabled()
@@ -574,5 +590,219 @@ class SettingsScreenTest {
             .performScrollTo()
             .assertIsDisplayed()
             .assertIsOff()
+    }
+
+    // --- UI audit fixes (1.0.x) ---
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the work days are one row of seven toggles that keep their full weekday names`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Arbeitstage")
+
+        compose.onNodeWithContentDescription("Montag").assertIsOn()
+        compose.onNodeWithContentDescription("Samstag").assertIsOff()
+
+        compose.onNodeWithContentDescription("Samstag").performClick()
+        compose.onNodeWithContentDescription("Montag").performClick()
+
+        compose.waitUntil(5_000) {
+            runCatching {
+                compose.onNodeWithContentDescription("Samstag").assertIsOn()
+                compose.onNodeWithContentDescription("Montag").assertIsOff()
+            }.isSuccess
+        }
+        // The same row at every size: all seven names are on screen at once, none wrapped away.
+        for (name in listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")) {
+            compose.onNodeWithText(name).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `Heiligabend and Silvester are chosen in a segmented row with the old descriptions`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Arbeitstage")
+
+        compose
+            .onNodeWithContentDescription("Heiligabend (24.12.): Halber Tag")
+            .performScrollTo()
+            .performClick()
+
+        compose.waitUntil(5_000) {
+            runCatching {
+                compose
+                    .onNodeWithContentDescription("Heiligabend (24.12.): Halber Tag")
+                    .assertIsSelected()
+            }.isSuccess
+        }
+        compose.onNodeWithContentDescription("Silvester (31.12.): Ganzer Tag").assertIsSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the work day buttons are touch targets of at least 48 dp`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Arbeitstage")
+
+        // The chips they replace had 48 dp (CLAUDE.md: touch targets of at least 48 dp).
+        compose.onNodeWithContentDescription("Montag").assertHeightIsAtLeast(48.dp)
+        compose
+            .onNodeWithContentDescription("Heiligabend (24.12.): Halber Tag")
+            .performScrollTo()
+            .assertHeightIsAtLeast(48.dp)
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `pure black cannot be switched while Hell is chosen and keeps its value`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Darstellung")
+        compose.onNodeWithText("Dunkel").performClick()
+        compose.onNodeWithText("Reines Schwarz").performScrollTo().performClick()
+
+        compose.onNodeWithText("Hell").performClick()
+
+        compose.onNodeWithText("Reines Schwarz").assertIsNotEnabled()
+        assertTrue(appearance.state.value.oled)
+        compose.onNodeWithText("Dunkel").performClick()
+        compose.onNodeWithText("Reines Schwarz").assertIsEnabled().assertIsOn()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the three modes are one group for TalkBack`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Darstellung")
+
+        compose
+            .onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup))
+            .assertExists()
+        compose
+            .onNode(
+                hasAnyAncestor(
+                    SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup),
+                ) and
+                    hasText("Hell"),
+            ).assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the Land dialog is a selectable group and its names may be hyphenated`() {
+        show("Einstellungen")
+        compose.onNodeWithText("Bundesland wählen").performClick()
+
+        compose
+            .onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup))
+            .assertExists()
+        compose
+            .onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup))
+            .performScrollToNode(hasText("Mecklenburg-Vorpommern"))
+        val results = mutableListOf<TextLayoutResult>()
+        compose
+            .onNodeWithText("Mecklenburg-Vorpommern")
+            .fetchSemanticsNode()
+            .config
+            .getOrNull(SemanticsActions.GetTextLayoutResult)
+            ?.action
+            ?.invoke(results)
+        assertEquals(
+            Hyphens.Auto,
+            results
+                .single()
+                .layoutInput.style.hyphens,
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the section titles of the about page are headings`() {
+        show("Einstellungen")
+        chooseLand(Bundesland.NORDRHEIN_WESTFALEN, "Nordrhein-Westfalen")
+        openRow("Über die App")
+
+        for (title in listOf("Schulferiendaten", "Bibliotheken", "Lizenztexte")) {
+            compose
+                .onNode(
+                    hasText(title) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading),
+                ).performScrollTo()
+                .assertExists()
+        }
+    }
+
+    private fun showAtFontScale(
+        scale: Float,
+        title: String,
+    ) {
+        compose.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, scale)) {
+                SettingsHost(viewModel, appearance, showMessage = {}, PaddingValues())
+            }
+        }
+        waitForText(title)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w360dp-h780dp-xxhdpi")
+    fun `at a 200 percent font the expiry label is one line and the years get their own row`() {
+        runBlocking {
+            repository.saveSettings(UserSettings(land = Bundesland.NORDRHEIN_WESTFALEN))
+            repository.saveEntitlement(YearEntitlement(2027, VacationDays.of(30)))
+        }
+        showAtFontScale(2f, "Nordrhein-Westfalen")
+        openRow("Urlaub 2027")
+
+        compose.onNodeWithText("Verfällt am").performScrollTo().assertIsDisplayed()
+        val results = mutableListOf<TextLayoutResult>()
+        compose
+            .onAllNodesWithText("Verfällt am", useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .forEach {
+                it.config
+                    .getOrNull(SemanticsActions.GetTextLayoutResult)
+                    ?.action
+                    ?.invoke(results)
+            }
+        assertTrue(results.isNotEmpty())
+        assertTrue(results.all { it.lineCount == 1 })
+        // The year choice is below the field, not beside it.
+        val field = compose.onNodeWithText("Verfällt am").getUnclippedBoundsInRoot()
+        val years =
+            compose
+                .onNodeWithContentDescription(
+                    "Verfällt im Jahr 2027",
+                ).getUnclippedBoundsInRoot()
+        assertTrue(years.top >= field.bottom - 1.dp)
+    }
+
+    @Test
+    @Config(qualifiers = "de-w360dp-h780dp-xxhdpi")
+    fun `at the normal font the year choice stays beside the expiry field`() {
+        runBlocking {
+            repository.saveSettings(UserSettings(land = Bundesland.NORDRHEIN_WESTFALEN))
+            repository.saveEntitlement(YearEntitlement(2027, VacationDays.of(30)))
+        }
+        showAtFontScale(1f, "Nordrhein-Westfalen")
+        openRow("Urlaub 2027")
+
+        val field =
+            compose
+                .onNodeWithText(
+                    "Verfällt am",
+                ).performScrollTo()
+                .getUnclippedBoundsInRoot()
+        val years =
+            compose
+                .onNodeWithContentDescription(
+                    "Verfällt im Jahr 2027",
+                ).getUnclippedBoundsInRoot()
+        assertTrue(years.left >= field.right - 1.dp)
     }
 }

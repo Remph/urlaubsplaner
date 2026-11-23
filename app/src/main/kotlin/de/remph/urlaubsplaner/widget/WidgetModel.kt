@@ -8,6 +8,7 @@ import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.balance.AmountText
 import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.widget.WidgetStatus
+import de.remph.urlaubsplaner.planner.pluralQuantity
 import de.remph.urlaubsplaner.ui.Tab
 import java.util.Locale
 
@@ -48,6 +49,8 @@ sealed interface WidgetModel {
         /** Wide: the three figures, or the warning in their place. */
         val figures: List<String>,
         val warning: String?,
+        /** The warning in fewer words, for a widget too low for two lines: no "Resturlaub". */
+        val warningShort: String? = null,
     ) : WidgetModel {
         override val opens: Tab get() = Tab.OVERVIEW
     }
@@ -141,13 +144,14 @@ sealed interface WidgetModel {
                             WidgetDates.range(trip.start, trip.end, year, locale, dayPattern),
                             context.resources.getQuantityString(
                                 R.plurals.widget_trip_cost,
-                                quantityOf(trip.cost),
+                                trip.cost.pluralQuantity(),
                                 text(trip.cost, locale),
                             ),
                         )
                     }
                 }
-            val warning =
+
+            fun warning(plural: Int) =
                 status.carryOverWarning?.let {
                     val expiry =
                         if (it.expiry.year == year) {
@@ -156,12 +160,14 @@ sealed interface WidgetModel {
                             AmountText.formatDate(it.expiry)
                         }
                     context.resources.getQuantityString(
-                        R.plurals.widget_carry_over_warning,
-                        quantityOf(it.days),
+                        plural,
+                        it.days.pluralQuantity(),
                         text(it.days, locale),
                         expiry,
                     )
                 }
+            val warning = warning(R.plurals.widget_carry_over_warning)
+            val warningShort = warning(R.plurals.widget_carry_over_warning_short)
             return Status(
                 number = text(remaining, locale).replace('-', MINUS),
                 overbooked = overbooked,
@@ -186,6 +192,7 @@ sealed interface WidgetModel {
                         "${context.getString(R.string.of_total)} ${text(status.total, locale)}",
                     ),
                 warning = warning,
+                warningShort = warningShort,
             )
         }
 
@@ -193,8 +200,6 @@ sealed interface WidgetModel {
             days: VacationDays,
             locale: Locale,
         ) = AmountText.format(days, locale)
-
-        private fun quantityOf(days: VacationDays) = if (days == VacationDays.ONE) 1 else 2
 
         private const val MINUS = '−'
     }
