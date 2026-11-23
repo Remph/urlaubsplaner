@@ -93,7 +93,7 @@ class OverviewScreenTest {
     @Config(qualifiers = "de")
     fun `the days left come first, then taken and planned`() {
         fixture.fill()
-        show("Tage übrig 2027")
+        show("2027: Tage übrig")
 
         compose.onNodeWithText("33").assertIsDisplayed()
         compose.onNode(hasText("2") and hasText("Genommen")).assertIsDisplayed()
@@ -139,7 +139,7 @@ class OverviewScreenTest {
     fun `a recent backup or a young start shows no line`() {
         fixture.fill()
         fixture.backupStatus.recordBackup(LocalDate.of(2027, 2, 1))
-        show("Tage übrig 2027")
+        show("2027: Tage übrig")
 
         compose.onAllNodesWithText("Sicherung", substring = true).assertCountEquals(0)
     }
@@ -148,7 +148,7 @@ class OverviewScreenTest {
     @Config(qualifiers = "de")
     fun `the first marked days start the wait, they do not show the line at once`() {
         fixture.fill()
-        show("Tage übrig 2027")
+        show("2027: Tage übrig")
         // The view model noted today as the start; nothing is due before 14 days have passed.
         compose.waitUntil(5_000) { fixture.backupStatus.state.value.marksSince != null }
 
@@ -178,7 +178,7 @@ class OverviewScreenTest {
                 DayMark.FULL,
             )
         }
-        show("Tage übrig 2027")
+        show("2027: Tage übrig")
         compose.waitUntil(5_000) {
             compose.onAllNodesWithText("30").fetchSemanticsNodes().isNotEmpty()
         }
@@ -250,7 +250,7 @@ class OverviewScreenTest {
     @Config(qualifiers = "en")
     fun `the English overview has the English texts and date format`() {
         fixture.fill()
-        show("Days left 2027")
+        show("2027: Days left")
 
         compose.onNodeWithText("33").assertIsDisplayed()
         compose
@@ -280,7 +280,7 @@ class OverviewScreenTest {
                 true,
             )
         }
-        show("Tage übrig 2027")
+        show("2027: Tage übrig")
 
         compose.onNodeWithText("Davon genehmigt: 2 Tage").performScrollTo().assertIsDisplayed()
     }
@@ -291,7 +291,7 @@ class OverviewScreenTest {
         fixture.fill()
         grantedDaysOn()
         runBlocking { fixture.repository.setGranted(listOf(fixture.date("2027-03-15")), true) }
-        show("Days left 2027")
+        show("2027: Days left")
 
         compose.onNodeWithText("Of those, granted: 1 day").performScrollTo().assertIsDisplayed()
     }
@@ -301,7 +301,7 @@ class OverviewScreenTest {
     fun `no granted line while nothing is granted or the setting is off`() {
         fixture.fill()
         grantedDaysOn()
-        show("Tage übrig 2027")
+        show("2027: Tage übrig")
         compose.onNodeWithText("Davon genehmigt", substring = true).assertDoesNotExist()
 
         runBlocking {

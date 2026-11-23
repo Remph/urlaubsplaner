@@ -48,10 +48,10 @@ android {
                 .get()
                 .toInt()
         targetSdk = 37
-        // versionCode = major * 10000 + minor * 100 + patch (0.10.0 is 1000, 1.0.0 is 10000). F-Droid
+        // versionCode = major * 10000 + minor * 100 + patch (0.10.0 is 1000, 1.0.0 is 10000, 1.0.1 is 10001). F-Droid
         // names the changelog after it: fastlane/metadata/android/*/changelogs/<versionCode>.txt.
-        versionCode = 10000
-        versionName = "1.0.0"
+        versionCode = 10001
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

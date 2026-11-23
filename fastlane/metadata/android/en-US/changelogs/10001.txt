@@ -1,0 +1,1 @@
+Improved: texts are no longer cut off at a large font size, the widgets adapt to their size and show the new date after midnight. More hints for TalkBack. The work days are now buttons. A damaged backup file is refused instead of disturbing the app. The calendar export is faster. Updating from 1.0.0: your data and the backup file stay unchanged.
