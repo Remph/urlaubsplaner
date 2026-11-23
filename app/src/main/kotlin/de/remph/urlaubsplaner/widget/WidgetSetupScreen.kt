@@ -60,8 +60,14 @@ fun WidgetSetupScreen(
                     Text(
                         stringResource(R.string.widget_transparency),
                         style = MaterialTheme.typography.bodyLarge,
+                        // The label gives way, so the value keeps its width at a large font.
+                        modifier = Modifier.weight(1f).padding(end = 8.dp),
                     )
-                    Text(percent, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        percent,
+                        style = MaterialTheme.typography.titleMedium,
+                        softWrap = false,
+                    )
                 }
                 Slider(
                     value = style.transparencyPercent.toFloat(),

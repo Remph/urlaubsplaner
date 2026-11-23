@@ -37,10 +37,62 @@ fun rangeText(
 fun LocalDate.fullText(locale: Locale): String =
     DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale).format(this)
 
-/** The data file carries German and English names; any other language gets English. */
-fun SchoolHoliday.nameIn(locale: Locale): String = if (locale.language == "de") nameDe else nameEn
+/**
+ * The data file carries German and English names; any other language gets English. The English
+ * names arrive in Title Case ("Easter Holidays"); the app writes sentence case everywhere else,
+ * so they are shown as "Easter holidays". The bundled (ODbL) file itself is not changed.
+ */
+fun SchoolHoliday.nameIn(locale: Locale): String =
+    if (locale.language == "de") nameDe else nameEn.sentenceCase()
+
+// Words that keep their capital in the middle of an English name: feasts, days and months.
+private val PROPER_WORDS =
+    setOf(
+        "Easter",
+        "Christmas",
+        "Pentecost",
+        "Ascension",
+        "Maundy",
+        "Thursday",
+        "Reformation",
+        "Repentance",
+        "October",
+        "May",
+    )
+
+internal fun String.sentenceCase(): String {
+    val words = split(' ')
+    return words
+        .mapIndexed { index, word ->
+            val keepDay = word == "Day" && words.getOrNull(index - 1) in PROPER_WORDS
+            when {
+                // The first word keeps its own capital ("Easter") but "Mid-Year" becomes "Mid-year".
+                index == 0 && '-' in word -> {
+                    word.substringBefore('-') + "-" + word.substringAfter('-').lowercase()
+                }
+
+                index == 0 -> {
+                    word
+                }
+
+                word in PROPER_WORDS || keepDay -> {
+                    word
+                }
+
+                else -> {
+                    word.lowercase()
+                }
+            }
+        }.joinToString(" ")
+}
 
 fun VacationDays.text(locale: Locale): String = AmountText.format(this, locale)
+
+/**
+ * The plural form for "N Tage": only exactly one day takes "one"; 0,5 and 1,5 read "0,5 Tage",
+ * so they take "other". Android's own rule would pick "one" for 1,5 in some languages.
+ */
+fun VacationDays.pluralQuantity(): Int = if (this == VacationDays.ONE) 1 else 2
 
 /** "Mi 03.10." in German, "Wed, Oct 3" in English: short enough for a line, with the weekday. */
 fun LocalDate.weekdayDateText(locale: Locale): String =

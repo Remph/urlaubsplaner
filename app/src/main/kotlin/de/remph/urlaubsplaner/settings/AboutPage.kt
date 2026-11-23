@@ -22,8 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.core.net.toUri
 import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHolidayData
@@ -101,7 +101,10 @@ fun AboutPage(
                 showDivider = false,
             )
         }
-        Section(stringResource(R.string.about_data_title), SchoolHolidayData.CREDIT)
+        Section(
+            stringResource(R.string.about_data_title),
+            stringResource(R.string.about_data_credit),
+        )
         Section(
             stringResource(R.string.about_libraries_title),
             stringResource(R.string.about_libraries_body),
@@ -109,6 +112,7 @@ fun AboutPage(
         Text(
             stringResource(R.string.about_texts_title),
             style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() },
         )
         SettingsGroup {
             val texts = LicenceText.entries
@@ -125,7 +129,7 @@ fun AboutPage(
     shown?.let { text ->
         val title = stringResource(text.titleRes)
         val missing = stringResource(R.string.about_text_missing)
-        val body = remember(text) { readLicence(context, text, missing) }
+        val body = remember(text) { reflowLicence(readLicence(context, text, missing)) }
         AlertDialog(
             onDismissRequest = { shown = null },
             title = { Text(title) },
@@ -133,8 +137,7 @@ fun AboutPage(
                 Text(
                     body,
                     modifier = Modifier.verticalScroll(rememberScrollState()),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             },
             confirmButton = {
@@ -149,7 +152,14 @@ private fun Section(
     title: String,
     body: String,
 ) {
-    Text(title, style = MaterialTheme.typography.titleSmall)
+    Text(
+        title,
+        style = MaterialTheme.typography.titleSmall,
+        modifier =
+            Modifier.semantics {
+                heading()
+            },
+    )
     Text(
         body,
         style = MaterialTheme.typography.bodyMedium,

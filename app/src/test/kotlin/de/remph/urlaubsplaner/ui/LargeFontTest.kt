@@ -23,6 +23,7 @@ import de.remph.urlaubsplaner.settings.SettingsViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,7 +43,9 @@ class LargeFontTest {
     @After
     fun close() = fixture.close()
 
-    private fun lineCount(text: String): Int {
+    private fun layoutOf(text: String) = layoutsOf(text).single()
+
+    private fun layoutsOf(text: String): List<TextLayoutResult> {
         val results = mutableListOf<TextLayoutResult>()
         compose
             .onAllNodesWithText(text, useUnmergedTree = true)
@@ -53,7 +56,87 @@ class LargeFontTest {
                     ?.action
                     ?.invoke(results)
             }
-        return results.single().lineCount
+        return results
+    }
+
+    private fun lineCount(text: String) = layoutOf(text).lineCount
+
+    private fun app(fontScale: Float) {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val settings =
+            SettingsViewModel(
+                fixture.repository,
+                BackupFileStore(context.contentResolver, context.packageName),
+                CalendarExporter(fixture.repository, CalendarFileStore(context), fixture.clock),
+                fixture.clock,
+                fixture.backupStatus,
+            )
+        val appearance = AppearanceStore(context.getSharedPreferences("large-font-test", 0))
+        compose.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
+                AppRoot(settings, fixture.viewModel(), appearance, null)
+            }
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "de-w360dp-h800dp-xxhdpi")
+    fun `the bottom bar labels are whole at a 200 percent font`() {
+        fixture.fill()
+        app(2f)
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("Einstellungen").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        for (label in listOf("Übersicht", "Kalender", "Einstellungen")) {
+            val layout = layoutOf(label)
+            assertEquals(label, 1, layout.lineCount)
+            assertFalse("$label is cut", layout.didOverflowWidth)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "de-w360dp-h800dp-xxhdpi")
+    fun `the overview tile labels are whole at a 200 percent font`() {
+        fixture.fill()
+        app(2f)
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("Genommen").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        for (label in listOf("Genommen", "Geplant", "Anspruch")) {
+            // The same word is also the legend of the calendar, which is allowed to wrap.
+            for (layout in layoutsOf(label).filter { it.layoutInput.maxLines == 1 }) {
+                assertEquals(label, 1, layout.lineCount)
+                assertFalse("$label is cut", layout.didOverflowWidth)
+            }
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "de-w360dp-h800dp-xxhdpi")
+    fun `the year grid month names are whole and different at a 200 percent font`() {
+        fixture.fill()
+        app(2f)
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithText("Genommen").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        val names =
+            (1..12).map {
+                java.time.Month
+                    .of(
+                        it,
+                    ).getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.GERMAN)
+                    .trimEnd('.')
+            }
+        for (name in names) {
+            for (layout in layoutsOf(name)) {
+                assertFalse("$name is cut", layout.didOverflowWidth)
+                assertFalse("$name is cut at the bottom", layout.didOverflowHeight)
+            }
+        }
     }
 
     @Test

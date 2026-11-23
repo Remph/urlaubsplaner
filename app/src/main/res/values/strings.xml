@@ -119,8 +119,8 @@
     <string name="clear_year_confirm">Löschen</string>
     <string name="notice_year_cleared" tools:ignore="PluralsCandidate">Urlaubstage von %1$d gelöscht.</string>
 
-    <!-- Kalender-Export -->
-    <string name="section_calendar_export">Kalender-Export</string>
+    <!-- Kalenderexport -->
+    <string name="section_calendar_export">Kalenderexport</string>
     <string name="calendar_export_row_value">Urlaub als Kalenderdatei</string>
     <string name="calendar_export_explain">Die Datei enthält deinen Urlaub, genommen und geplant, mit einem Eintrag pro Urlaub. Feiertage und Schulferien sind nicht dabei. Du kannst sie in einer Kalender-App öffnen oder als Datei speichern.</string>
     <string name="calendar_export_none">Noch kein Urlaub eingetragen. Markiere Urlaubstage im Kalender.</string>
@@ -185,7 +185,10 @@
     <string name="taken">Genommen</string>
     <string name="planned">Geplant</string>
     <string name="of_total">Anspruch</string>
-    <string name="carry_over_warning">%1$s Tage Resturlaub verfallen am %2$s. Plane sie noch ein.</string>
+    <plurals name="carry_over_warning">
+        <item quantity="one">%1$s Tag Resturlaub verfällt am %2$s. Plane ihn noch ein.</item>
+        <item quantity="other">%1$s Tage Resturlaub verfallen am %2$s. Plane sie noch ein.</item>
+    </plurals>
     <string name="next_trip">Nächster Urlaub</string>
     <string name="no_trip">Noch kein Urlaub geplant</string>
     <string name="trip_now">Du bist gerade im Urlaub.</string>
@@ -198,7 +201,7 @@
         <item quantity="other">kostet %1$s Urlaubstage</item>
     </plurals>
     <plurals name="holiday_in_days">
-        <item quantity="one">%1$s, in %2$d Tag</item>
+        <item quantity="one">%1$s, morgen</item>
         <item quantity="other">%1$s, in %2$d Tagen</item>
     </plurals>
     <string name="year_grid_description">Jahresübersicht %1$d. Tippe auf einen Monat, um ihn zu öffnen.</string>
@@ -263,6 +266,7 @@
         <item quantity="other">%d Tage entfernt</item>
     </plurals>
     <string name="undo">Rückgängig</string>
+    <string name="costs_nothing_holiday">An diesem Tag ist Feiertag. Er kostet keinen Urlaub.</string>
     <string name="costs_nothing">An diesem Tag arbeitest du nicht oder es ist ein Feiertag. Er kostet keinen Urlaub.</string>
     <plurals name="sheet_costs">
         <item quantity="one">Kostet %1$s Urlaubstag</item>
@@ -325,6 +329,10 @@
         <item quantity="one">%1$s Tag Resturlaub verfällt am %2$s</item>
         <item quantity="other">%1$s Tage Resturlaub verfallen am %2$s</item>
     </plurals>
+    <plurals name="widget_carry_over_warning_short">
+        <item quantity="one">%1$s Tag verfällt am %2$s</item>
+        <item quantity="other">%1$s Tage verfallen am %2$s</item>
+    </plurals>
     <string name="widget_no_land_hint">Dann zeigt das Widget deinen Urlaub.</string>
     <string name="widget_no_entitlement_hint" tools:ignore="PluralsCandidate">Für %1$d fehlen sie noch.</string>
     <string name="widget_setup_title">Widget einrichten</string>
@@ -345,6 +353,8 @@
     <string name="about_licence">Lizenz der App</string>
     <string name="about_licence_value">GPL-3.0 oder neuer, freie Software</string>
     <string name="about_data_title">Schulferiendaten</string>
+    <!-- Quellenname, Link und "ODbL" bleiben unverändert: Die Lizenz verlangt diesen Hinweis. -->
+    <string name="about_data_credit">Enthält Informationen der OpenHolidays API (https://www.openholidaysapi.org), die hier unter der Open Database License (ODbL) bereitgestellt werden.</string>
     <string name="about_libraries_title">Bibliotheken</string>
     <string name="about_libraries_body">AndroidX (Compose, Room, Glance und weitere), Kotlin und kotlinx stehen unter der Apache-Lizenz 2.0. Das Widget bringt Protocol Buffers mit (BSD-3-Clause).</string>
     <string name="about_texts_title">Lizenztexte</string>

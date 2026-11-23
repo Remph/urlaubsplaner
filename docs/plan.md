@@ -338,8 +338,13 @@ folder); the logic is `:core.widget.WidgetStatus` (unit-tested), the rest is `:a
 
 - Two widgets in the launcher's picker (the maintainer, 2026-10-26, after the first build had one resizable
   widget with two layouts): "Urlaubsplaner (klein)" (2x1) and "Urlaubsplaner (groß)" (4x2 at least;
-  both can be resized, the big one not below 4x2). Each draws its own layout (`WidgetLayout`, `SizeMode.Single`), so
-  the text never overflows. Small shows the days left and one line ("Nächster Urlaub 14.04."); big adds
+  both can be resized, the big one not below 4x2). Each draws its own layout (`WidgetLayout`, `SizeMode.Exact` since the UI audit
+  fix round, 2026-11), so the text never overflows: at the smallest sizes and at a large font the layout
+  steps down by the size the launcher really gives (`WidgetTier.kt`, thresholds grow with the font
+  scale): the big one from the two-line warning strip to a one-line short warning
+  (`widget_carry_over_warning_short`) to no strip at all; the small one from number, unit and next trip to the
+  number as big as the height allows and its unit (below about 60 dp). `widgetSize` reports the size for the
+  way the phone is held, because the app's own render (`WidgetRenderer`) gets no size from Glance. Small shows the days left and one line ("Nächster Urlaub 14.04."); big adds
   the next trip as a range with its cost and "Genommen, Geplant, Anspruch" (Anspruch = entitlement
   plus Resturlaub), which the warning "3 Tage Resturlaub verfallen am 31.03." replaces while
   Resturlaub is about to expire (same rule as the overview card). Overbooked shows a negative
@@ -348,7 +353,8 @@ folder); the logic is `:core.widget.WidgetStatus` (unit-tested), the rest is `:a
   `UrlaubsplanerBigWidgetReceiver`; both share one setup screen, which finds the kind of widget by
   its provider (`widgetFor`). The big layout was found to need about 280 x 120 dp (M5 UI review);
   the big widget declares 250 x 110 dp (4 x 2 cells before Android 12) and draws the big layout
-  whatever the cell gives, so a launcher with a smaller 4x2 cell would clip it; the maintainer's phone fits.
+  whatever the cell gives (a launcher with a smaller 4x2 cell now gets the compact tiers; the
+  maintainer's phone fits the full one).
   Picker previews (`widget_preview_small/big.png` in `res/drawable-nodpi`, English in
   `drawable-en-nodpi`) are renders of the real layouts with sample data (17 days left, light, the
   app's own colours), made with a throwaway Robolectric harness that is not in the repo; redo them
@@ -484,7 +490,7 @@ Designed with the maintainer on 2026-10-26 (card taps, one question at a time).
   other (the app's own rule). The UID is `urlaubsplaner-<first day>@de.remph.urlaubsplaner`, so
   importing a newer file again updates the event in most calendar apps. DTSTAMP comes from the
   clock. The end date is exclusive, as RFC 5545 wants for all-day events.
-- `:app`: page "Kalender-Export" in Einstellungen (only with a Land chosen; without a Land what a
+- `:app`: page "Kalenderexport" in Einstellungen (only with a Land chosen; without a Land what a
   marked day costs is not known). It says how many vacations the file holds and has two buttons,
   "In Kalender öffnen" (`ACTION_VIEW`, `text/calendar`, a cache file read through a
   `FileProvider`, only the newest export is kept) and "Als Datei speichern" (`CreateDocument`, no

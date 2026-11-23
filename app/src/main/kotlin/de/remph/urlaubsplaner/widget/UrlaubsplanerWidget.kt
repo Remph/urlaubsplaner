@@ -32,8 +32,9 @@ import kotlinx.coroutines.withContext
 open class UrlaubsplanerWidget(
     internal val layout: WidgetLayout = WidgetLayout.SMALL,
 ) : GlanceAppWidget() {
-    // The cell the launcher gives is the size of the layout; nothing to choose between.
-    override val sizeMode = SizeMode.Single
+    // The layout is chosen by the widget kind, but at its smallest sizes (and at a large font) it
+    // steps down (see WidgetTier), so it needs the size the launcher really gives.
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(
         context: Context,

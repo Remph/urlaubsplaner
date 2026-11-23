@@ -13,6 +13,7 @@ import androidx.glance.ColorFilter
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionStartActivity
@@ -37,6 +38,9 @@ import de.remph.urlaubsplaner.MainActivity
 import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.ui.TabRequest
 
+private val SMALL_PADDING = 6.dp
+private val NUMBER_PADDING = 8.dp
+
 /** The two widgets in the picker, and with them the two layouts. */
 enum class WidgetLayout { SMALL, BIG }
 
@@ -50,6 +54,20 @@ fun WidgetContent(
     val context = LocalContext.current
     val palette = remember(style.colors) { WidgetPalette.of(context, style.colors) }
     val wide = layout == WidgetLayout.BIG
+    // The size the launcher gives this widget, and the font: the tiers follow both.
+    val size = LocalSize.current
+    val fontScale = context.resources.configuration.fontScale
+    val tier = if (model is WidgetModel.Status) wideTier(size, fontScale) else WideTier.FULL
+    val numberOnly =
+        !wide && model is WidgetModel.Status && smallTier(size, fontScale) == SmallTier.NUMBER
+    // The lower tiers give back what the padding takes, so the text keeps its room.
+    val padding =
+        when {
+            numberOnly -> NUMBER_PADDING to SMALL_PADDING
+            wide && tier != WideTier.FULL -> 12.dp to 5.dp
+            wide -> 16.dp to 8.dp
+            else -> 16.dp to SMALL_PADDING
+        }
     Box(
         modifier =
             GlanceModifier
@@ -61,13 +79,42 @@ fun WidgetContent(
                     24.dp,
                     R.drawable.widget_background,
                 ).clickable(openApp(context, model))
-                .padding(horizontal = 16.dp, vertical = if (wide) 8.dp else 6.dp),
+                .padding(horizontal = padding.first, vertical = padding.second),
         contentAlignment = Alignment.CenterStart,
     ) {
         when {
-            model is WidgetModel.Prompt -> Prompt(model, palette, wide)
-            model is WidgetModel.Status && wide -> WideStatus(model, palette)
-            model is WidgetModel.Status -> SmallStatus(model, palette)
+            model is WidgetModel.Prompt -> {
+                Prompt(model, palette, wide)
+            }
+
+            model is WidgetModel.Status && wide -> {
+                WideStatus(
+                    model,
+                    palette,
+                    tier,
+                    showYear(size, fontScale),
+                    tier != WideTier.MINIMAL || showTripCost(size, fontScale),
+                )
+            }
+
+            model is WidgetModel.Status -> {
+                if (numberOnly) {
+                    NumberOnlyStatus(
+                        model,
+                        palette,
+                        numberSize(
+                            size,
+                            NUMBER_PADDING,
+                            SMALL_PADDING,
+                            fontScale,
+                            model.number,
+                            model.unit,
+                        ),
+                    )
+                } else {
+                    SmallStatus(model, palette)
+                }
+            }
         }
     }
 }
@@ -114,10 +161,31 @@ private fun SmallStatus(
     }
 }
 
+/** The lowest small widget: the number as big as the height allows, and what it counts. */
+@Composable
+private fun NumberOnlyStatus(
+    model: WidgetModel.Status,
+    palette: WidgetPalette,
+    numberSize: androidx.compose.ui.unit.TextUnit,
+) {
+    Row(verticalAlignment = Alignment.Bottom) {
+        Number(model, palette, numberSize)
+        Spacer(GlanceModifier.width(UNIT_GAP_DP.dp))
+        Text(
+            model.unit,
+            style = textStyle(palette, UNIT_SP.sp) { it.muted },
+            maxLines = 1,
+        )
+    }
+}
+
 @Composable
 private fun WideStatus(
     model: WidgetModel.Status,
     palette: WidgetPalette,
+    tier: WideTier,
+    showYear: Boolean,
+    showCost: Boolean,
 ) {
     Column(
         modifier = GlanceModifier.fillMaxWidth(),
@@ -128,9 +196,9 @@ private fun WideStatus(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = GlanceModifier.defaultWeight()) {
-                Number(model, palette, 40.sp)
+                Number(model, palette, if (tier == WideTier.FULL) 40.sp else 32.sp)
                 Text(
-                    model.unitWithYear,
+                    if (showYear) model.unitWithYear else model.unit,
                     style = textStyle(palette, 12.sp) { it.muted },
                     maxLines = 1,
                 )
@@ -148,10 +216,21 @@ private fun WideStatus(
                 Text(model.tripLabel, style = textStyle(palette, 11.sp) { it.muted }, maxLines = 2)
                 Text(
                     model.tripWhen,
-                    style = textStyle(palette, 17.sp, FontWeight.Bold) { it.ink },
+                    style =
+                        textStyle(
+                            palette,
+                            if (tier ==
+                                WideTier.FULL
+                            ) {
+                                17.sp
+                            } else {
+                                15.sp
+                            },
+                            FontWeight.Bold,
+                        ) { it.ink },
                     maxLines = 2,
                 )
-                if (model.tripCost != null) {
+                if (model.tripCost != null && showCost) {
                     Text(
                         model.tripCost,
                         style = textStyle(palette, 12.sp) { it.muted },
@@ -160,32 +239,36 @@ private fun WideStatus(
                 }
             }
         }
-        Spacer(GlanceModifier.height(6.dp))
-        if (model.warning != null) {
-            Text(
-                model.warning,
-                style = textStyle(palette, 12.sp) { it.onWarning },
-                maxLines = 2,
-                modifier =
-                    GlanceModifier
-                        .fillMaxWidth()
-                        .widgetBackground(
-                            palette,
-                            1f,
-                            8.dp,
-                            R.drawable.widget_background_small,
-                        ) { it.warning }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-            )
-        } else {
-            Row(modifier = GlanceModifier.fillMaxWidth()) {
-                for (figure in model.figures) {
-                    Text(
-                        figure,
-                        style = textStyle(palette, 12.sp) { it.muted },
-                        maxLines = 1,
-                        modifier = GlanceModifier.padding(end = 12.dp),
-                    )
+        // Too low for the strip: the number and the trip are what the widget is for.
+        if (tier != WideTier.MINIMAL) {
+            Spacer(GlanceModifier.height(if (tier == WideTier.FULL) 6.dp else 3.dp))
+            if (model.warning != null) {
+                val compact = tier == WideTier.COMPACT
+                Text(
+                    if (compact) model.warningShort ?: model.warning else model.warning,
+                    style = textStyle(palette, 12.sp) { it.onWarning },
+                    maxLines = if (compact) 1 else 2,
+                    modifier =
+                        GlanceModifier
+                            .fillMaxWidth()
+                            .widgetBackground(
+                                palette,
+                                1f,
+                                8.dp,
+                                R.drawable.widget_background_small,
+                            ) { it.warning }
+                            .padding(horizontal = 8.dp, vertical = if (compact) 2.dp else 4.dp),
+                )
+            } else {
+                Row(modifier = GlanceModifier.fillMaxWidth()) {
+                    for (figure in model.figures) {
+                        Text(
+                            figure,
+                            style = textStyle(palette, 12.sp) { it.muted },
+                            maxLines = 1,
+                            modifier = GlanceModifier.padding(end = 12.dp),
+                        )
+                    }
                 }
             }
         }

@@ -370,8 +370,37 @@ class CalendarScreenTest {
 
         day("Freitag, 26. März 2027").performClick()
 
-        compose.onNodeWithText("kostet keinen Urlaub", substring = true).assertIsDisplayed()
+        // On a holiday the sheet says holiday, not "you do not work or it is a holiday".
+        compose
+            .onNodeWithText("An diesem Tag ist Feiertag. Er kostet keinen Urlaub.")
+            .assertIsDisplayed()
+        compose.onNodeWithText("arbeitest du nicht", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Eintragen").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a day off keeps the general words`() {
+        show()
+        waitForText("Karfreitag")
+
+        day("Samstag, 13. März 2027").performClick()
+
+        compose
+            .onNodeWithText("arbeitest du nicht oder es ist ein Feiertag", substring = true)
+            .assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `a holiday of the month card is one stop for TalkBack, name and date together`() {
+        show()
+        waitForText("Karfreitag")
+
+        compose
+            .onNode(hasText("Karfreitag") and hasText("26.03.2027"))
+            .performScrollTo()
+            .assertExists()
     }
 
     @Test

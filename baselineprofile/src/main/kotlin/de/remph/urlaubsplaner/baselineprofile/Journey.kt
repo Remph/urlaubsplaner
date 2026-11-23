@@ -132,7 +132,7 @@ private fun MacrobenchmarkScope.visitSettings() {
             text("Arbeitstage", "Working days"),
             text("Darstellung", "Appearance"),
             text("Datensicherung", "Backup"),
-            text("Kalender-Export", "Calendar export"),
+            text("Kalenderexport", "Calendar export"),
             text("Über die App", "About"),
         )
     for (page in pages) {

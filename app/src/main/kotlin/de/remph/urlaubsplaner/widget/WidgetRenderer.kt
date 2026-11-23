@@ -5,6 +5,7 @@ package de.remph.urlaubsplaner.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.res.Configuration
 import android.widget.RemoteViews
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -42,8 +43,10 @@ internal class WidgetRenderer {
 }
 
 /**
- * The size the launcher gives one placed widget, in dp. The content does not depend on it (the
- * layout is chosen by the widget kind and fills the cell); Glance wants a value for it anyway.
+ * The size the launcher gives one placed widget, in dp, for the way the phone is held now: the
+ * layout steps down at its smallest sizes (see [wideTier]), so a render outside Glance's own
+ * session must know it. The launcher reports the portrait size as (min width, max height) and the
+ * landscape size as (max width, min height).
  */
 internal fun widgetSize(
     context: Context,
@@ -51,9 +54,16 @@ internal fun widgetSize(
 ): DpSize {
     val manager = AppWidgetManager.getInstance(context)
     val options = manager.getAppWidgetOptions(appWidgetId)
-    val width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
-    val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+    val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+    val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+    val maxWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0)
+    val maxHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
+    val landscape =
+        context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val width = if (landscape) maxWidth else minWidth
+    val height = if (landscape) minHeight else maxHeight
     if (width > 0 && height > 0) return DpSize(width.dp, height.dp)
+    if (minWidth > 0 && minHeight > 0) return DpSize(minWidth.dp, minHeight.dp)
     val info = manager.getAppWidgetInfo(appWidgetId)
     val density = context.resources.displayMetrics.density
     return DpSize(

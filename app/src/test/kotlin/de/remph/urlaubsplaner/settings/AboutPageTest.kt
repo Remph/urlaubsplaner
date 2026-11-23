@@ -4,6 +4,7 @@
 package de.remph.urlaubsplaner.settings
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.assertIsDisplayed
@@ -13,8 +14,10 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.remph.urlaubsplaner.R
 import de.remph.urlaubsplaner.core.schoolholidays.SchoolHolidayData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +42,35 @@ class AboutPageTest {
         compose.onNodeWithText("Über die App").assertIsDisplayed()
         compose.onNodeWithText("Version ", substring = true).assertIsDisplayed()
         compose.onNodeWithText("keinen Internetzugriff", substring = true).assertIsDisplayed()
+        compose
+            .onNodeWithText("Enthält Informationen der OpenHolidays API", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the German credit keeps the source name, the link and ODbL`() {
+        val credit =
+            ApplicationProvider.getApplicationContext<Context>().getString(
+                R.string.about_data_credit,
+            )
+
+        assertTrue("OpenHolidays API" in credit)
+        assertTrue("https://www.openholidaysapi.org" in credit)
+        assertTrue("(ODbL)" in credit)
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `the English credit is the constant the calendar export uses`() {
+        val credit =
+            ApplicationProvider.getApplicationContext<Context>().getString(
+                R.string.about_data_credit,
+            )
+
+        assertEquals(SchoolHolidayData.CREDIT, credit)
+        show()
         compose.onNodeWithText(SchoolHolidayData.CREDIT).performScrollTo().assertIsDisplayed()
     }
 

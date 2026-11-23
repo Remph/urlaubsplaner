@@ -174,7 +174,14 @@ fun DaySheet(
                 }
             } else {
                 Text(
-                    stringResource(R.string.costs_nothing),
+                    // On a holiday say so; "you do not work or it is a holiday" is for days off.
+                    stringResource(
+                        if (shown.holidays[date] != null) {
+                            R.string.costs_nothing_holiday
+                        } else {
+                            R.string.costs_nothing
+                        },
+                    ),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
