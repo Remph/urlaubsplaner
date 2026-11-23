@@ -117,7 +117,7 @@ internal fun rangeFill(
     }
 
 /** The day number's colour on the tile [rangeFill] chose. */
-internal fun rangeText(
+internal fun rangeTextColor(
     role: RangeRole,
     look: DayLook,
     colors: DayColors,
@@ -365,7 +365,7 @@ private fun PickerCell(
             otherwise = if (look.school) colors.school else scheme.surfaceContainerLow,
         )
     val textColor =
-        rangeText(
+        rangeTextColor(
             role,
             look,
             colors,

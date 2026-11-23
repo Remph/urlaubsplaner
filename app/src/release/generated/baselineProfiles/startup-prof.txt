@@ -21365,7 +21365,7 @@ PLde/remph/urlaubsplaner/planner/RangePickerKt;->pickerMonths(Ljava/time/LocalDa
 PLde/remph/urlaubsplaner/planner/RangePickerKt;->rangeFill-xwkQ0AY(Lde/remph/urlaubsplaner/planner/RangeRole;Lde/remph/urlaubsplaner/planner/DayLook;Lde/remph/urlaubsplaner/planner/DayColors;Landroidx/compose/material3/ColorScheme;J)J
 PLde/remph/urlaubsplaner/planner/RangePickerKt;->rangeRing(Lde/remph/urlaubsplaner/planner/RangeRole;Lde/remph/urlaubsplaner/planner/DayLook;)Z
 PLde/remph/urlaubsplaner/planner/RangePickerKt;->rangeRole(Ljava/time/LocalDate;Ljava/time/LocalDate;Ljava/time/LocalDate;)Lde/remph/urlaubsplaner/planner/RangeRole;
-PLde/remph/urlaubsplaner/planner/RangePickerKt;->rangeText-xwkQ0AY(Lde/remph/urlaubsplaner/planner/RangeRole;Lde/remph/urlaubsplaner/planner/DayLook;Lde/remph/urlaubsplaner/planner/DayColors;Landroidx/compose/material3/ColorScheme;J)J
+PLde/remph/urlaubsplaner/planner/RangePickerKt;->rangeTextColor-xwkQ0AY(Lde/remph/urlaubsplaner/planner/RangeRole;Lde/remph/urlaubsplaner/planner/DayLook;Lde/remph/urlaubsplaner/planner/DayColors;Landroidx/compose/material3/ColorScheme;J)J
 PLde/remph/urlaubsplaner/planner/RangePickerKt$$ExternalSyntheticLambda0;-><init>()V
 PLde/remph/urlaubsplaner/planner/RangePickerKt$$ExternalSyntheticLambda0;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
 PLde/remph/urlaubsplaner/planner/RangePickerKt$$ExternalSyntheticLambda10;-><init>(Lkotlin/jvm/functions/Function1;)V

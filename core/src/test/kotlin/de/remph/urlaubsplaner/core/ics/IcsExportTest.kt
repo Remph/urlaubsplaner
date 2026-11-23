@@ -274,6 +274,18 @@ class IcsExportTest {
     }
 
     @Test
+    fun `the first supported locale is the one the widget formats with`() {
+        val turkish = java.util.Locale.forLanguageTag("tr-TR")
+        val austria = java.util.Locale.forLanguageTag("de-AT")
+
+        assertEquals(
+            austria,
+            IcsLanguage.firstSupported(listOf(turkish, austria, java.util.Locale.UK)),
+        )
+        assertEquals(null, IcsLanguage.firstSupported(listOf(turkish)))
+    }
+
+    @Test
     fun `text values are escaped`() {
         assertEquals("a\\,b\\;c\\\\d\\ne", IcsText.escape("a,b;c\\d\ne"))
     }

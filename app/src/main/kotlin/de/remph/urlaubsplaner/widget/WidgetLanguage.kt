@@ -7,6 +7,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.os.LocaleList
+import de.remph.urlaubsplaner.core.ics.IcsLanguage
 import de.remph.urlaubsplaner.settings.LanguageChoice
 import java.util.Locale
 
@@ -44,10 +45,10 @@ class WidgetLanguage(
 
                     LanguageChoice.SYSTEM -> {
                         // The first language in the phone's list that the app has texts for
-                        // decides, like Android picks the screens and the ICS file: with Turkish
-                        // before English the screens are English, so the widget is too.
-                        List(locales.size()) { locales[it] }
-                            .firstOrNull { it.language == "de" || it.language == "en" }
+                        // decides, like Android picks the screens and the ICS file (one rule
+                        // for both, in IcsLanguage): with Turkish before English the screens
+                        // are English, so the widget is too.
+                        IcsLanguage.firstSupported(List(locales.size()) { locales[it] })
                             ?: Locale.GERMAN
                     }
                 }

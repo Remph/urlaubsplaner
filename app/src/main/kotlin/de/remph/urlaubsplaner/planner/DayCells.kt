@@ -275,9 +275,7 @@ private fun rememberMarkDrag(
                                 )
                             }
 
-                            DragFeedback.NONE -> {
-                                Unit
-                            }
+                            DragFeedback.NONE -> {}
                         }
                         state.range = drag.range
                         follow(point)
@@ -338,7 +336,14 @@ private fun DayCell(
             else -> scheme.onSurface
         }
     val fillTarget = if (role != null) rangeFill(role, look, colors, scheme, ownFill) else ownFill
-    val textTarget = if (role != null) rangeText(role, look, colors, scheme, ownText) else ownText
+    val textTarget =
+        if (role !=
+            null
+        ) {
+            rangeTextColor(role, look, colors, scheme, ownText)
+        } else {
+            ownText
+        }
     // Marking or removing a day fades the tile instead of flipping it. Compose follows Android's
     // "Remove animations" setting, so with it on the colours change at once.
     val fill by animateColorAsState(fillTarget, DayFade, label = "dayFill")
@@ -471,9 +476,7 @@ fun dayDescription(
     }
     if (look.school) parts += stringResource(R.string.day_school_holiday)
     when {
-        look.mark == null -> {
-            Unit
-        }
+        look.mark == null -> {}
 
         look.mark == DayMark.HALF && look.taken -> {
             parts += stringResource(R.string.day_taken_half)

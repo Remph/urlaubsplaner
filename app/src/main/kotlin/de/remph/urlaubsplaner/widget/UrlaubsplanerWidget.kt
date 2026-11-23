@@ -108,6 +108,10 @@ abstract class WidgetReceiver : GlanceAppWidgetReceiver() {
         context: Context,
         intent: Intent,
     ) {
+        // Every broadcast sets the alarm again (it replaces itself): a widget that is placed while
+        // the app process is already running would otherwise get no alarm until the next start of
+        // the process, and the Application's own look at the start cannot know about it.
+        (context.applicationContext as UrlaubsplanerApp).midnightAlarm.schedule()
         // A running Glance session would keep showing the old date or language (see [liveModel]).
         if (intent.action in DAY_CHANGES || intent.action == Intent.ACTION_LOCALE_CHANGED) {
             (context.applicationContext as UrlaubsplanerApp).widgetRefresher.invalidate()
@@ -118,15 +122,19 @@ abstract class WidgetReceiver : GlanceAppWidgetReceiver() {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, javaClass))
             onUpdate(context, manager, ids)
+        } else if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            // Nothing more to do here: the alarm is set above, and the system draws the widgets
+            // with its first update after the boot.
         } else {
             super.onReceive(context, intent)
         }
     }
 
     private companion object {
+        // The date broadcast (ACTION_DATE_CHANGED) is not here on purpose: Android does not deliver
+        // it to a receiver in the manifest. The midnight alarm covers the turn of the day.
         val DAY_CHANGES =
             setOf(
-                Intent.ACTION_DATE_CHANGED,
                 Intent.ACTION_TIME_CHANGED,
                 Intent.ACTION_TIMEZONE_CHANGED,
             )

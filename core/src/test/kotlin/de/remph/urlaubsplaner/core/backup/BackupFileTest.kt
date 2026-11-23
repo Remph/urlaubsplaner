@@ -338,8 +338,18 @@ class BackupFileTest {
         // The edges of the range are fine.
         BackupFile.decode(withEdit("\"year\": 2026", "\"year\": 1900"))
         BackupFile.decode(withEdit("\"year\": 2026", "\"year\": 2999"))
-        BackupFile.decode(withEdit("\"2026-07-01\"", "\"1900-01-01\""))
         BackupFile.decode(withEdit("\"2026-07-01\"", "\"2999-12-31\""))
+    }
+
+    @Test
+    fun `a marked day before 2019 is damaged, the holiday rules start there`() {
+        for (date in listOf("1900-01-01", "2018-06-04", "2018-12-31")) {
+            val e = refused<BackupException.Damaged>(withEdit("\"2026-07-01\"", "\"$date\""))
+            assertTrue(e.message!!.contains("2019"), e.message)
+        }
+        // The first day of the first supported year is the edge that still goes in.
+        val data = BackupFile.decode(withEdit("\"2026-07-01\"", "\"2019-01-01\""))
+        assertTrue(LocalDate.of(2019, 1, 1) in data.marks)
     }
 
     @Test

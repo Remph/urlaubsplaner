@@ -9,7 +9,8 @@ package de.remph.urlaubsplaner.core.balance
  */
 @JvmInline
 value class VacationDays private constructor(
-    private val halves: Int,
+    /** The amount in half days, the form it is stored and written to a backup in. */
+    val halves: Int,
 ) : Comparable<VacationDays> {
     val days: Double get() = halves / 2.0
 

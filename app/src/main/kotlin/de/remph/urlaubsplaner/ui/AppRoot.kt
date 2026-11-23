@@ -110,7 +110,10 @@ fun AppRoot(
         }
     }
     // A phone keeps the app in memory for days; the status must follow the date.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { plannerViewModel.refreshToday() }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        plannerViewModel.refreshToday()
+        settingsViewModel.refreshYear()
+    }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {

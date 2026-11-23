@@ -233,9 +233,7 @@ class PlannerViewModel(
         if (!canStep(steps)) return
         val month = shownMonth.value
         showMonth(
-            if (shownMode.value ==
-                CalendarMode.MONTH
-            ) {
+            if (shownMode.value == CalendarMode.MONTH) {
                 month.plusMonths(steps)
             } else {
                 month.plusYears(steps)
@@ -246,9 +244,7 @@ class PlannerViewModel(
     fun canStep(steps: Long): Boolean {
         val month = shownMonth.value
         val target =
-            if (shownMode.value ==
-                CalendarMode.MONTH
-            ) {
+            if (shownMode.value == CalendarMode.MONTH) {
                 month.plusMonths(steps)
             } else {
                 month.plusYears(steps)
@@ -329,7 +325,7 @@ class PlannerViewModel(
             repository.observeSettings(),
             repository.observeEntitlement(year),
             repository.observeMarkedDays(
-                LocalDate.of(year - 1, 12, 1).coerceAtLeast(LocalDate.of(firstYear, 1, 1)),
+                LocalDate.of(year - 1, 12, 1),
                 LocalDate.of(year + 1, 12, 31),
             ),
             today,

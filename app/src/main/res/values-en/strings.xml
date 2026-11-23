@@ -108,16 +108,16 @@
     <string name="notice_damaged">The backup is damaged and was not loaded. Nothing was changed.\n\nDetails: %1$s</string>
 
     <!-- Clear year -->
-    <string name="clear_year_action">Clear vacation days of %1$d</string>
-    <string name="clear_year_none">No days are marked in %1$d.</string>
-    <string name="clear_year_title">Clear vacation days of %1$d?</string>
+    <string name="clear_year_action" tools:ignore="PluralsCandidate">Clear vacation days of %1$d</string>
+    <string name="clear_year_none" tools:ignore="PluralsCandidate">No days are marked in %1$d.</string>
+    <string name="clear_year_title" tools:ignore="PluralsCandidate">Clear vacation days of %1$d?</string>
     <plurals name="clear_year_body">
         <item quantity="one">The marked day of %2$d will be deleted. Your entitlement and carried-over days stay.</item>
         <item quantity="other">All %1$d marked days of %2$d will be deleted. Your entitlement and carried-over days stay.</item>
     </plurals>
     <string name="clear_year_hint">This cannot be undone. Save a backup first under Backup.</string>
     <string name="clear_year_confirm">Clear</string>
-    <string name="notice_year_cleared">Vacation days of %1$d cleared.</string>
+    <string name="notice_year_cleared" tools:ignore="PluralsCandidate">Vacation days of %1$d cleared.</string>
 
     <!-- Calendar export -->
     <string name="section_calendar_export">Calendar export</string>

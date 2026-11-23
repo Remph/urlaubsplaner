@@ -17,6 +17,7 @@ import de.remph.urlaubsplaner.data.CalendarFileStore
 import de.remph.urlaubsplaner.data.TestDocuments
 import de.remph.urlaubsplaner.data.UrlaubsplanerDatabase
 import de.remph.urlaubsplaner.data.UserDataRepository
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -90,12 +91,12 @@ class CalendarExporterTest {
     }
 
     @Test
-    fun `a stored mark from before 2019 is ignored instead of crashing the export`() {
+    fun `a stored mark from before 2019 is exported like any other and does not crash`() {
         land()
         twoTrips()
         runBlocking { repository.mark(date("2018-06-04"), DayMark.FULL) }
 
-        assertEquals(2, runBlocking { exporter.tripCount() })
+        assertEquals(3, runBlocking { exporter.tripCount() })
     }
 
     @Test
@@ -131,16 +132,20 @@ class CalendarExporterTest {
         land()
         twoTrips()
 
-        val uri = runBlocking { exporter.openUri(IcsLanguage.GERMAN) }
+        // The same exporter that computes on its own thread: the count and the text are made
+        // there; the file name is asked for on the caller's thread, that is all.
+        var uri: Uri? = null
+        val threads = threadsAskingTheClock { uri = it.openUri(IcsLanguage.GERMAN) }
 
+        assertTrue("compute-test" in threads)
         assertNotNull(uri)
         // The debug build has the application ID suffix ".debug", the release build has none.
         assertEquals(context.packageName + ".fileprovider", uri!!.authority)
-        assertEquals("urlaubsplaner-2027-03-10.ics", uri.lastPathSegment)
+        assertEquals("urlaubsplaner-2027-03-10.ics", uri!!.lastPathSegment)
         val text =
             context.contentResolver
                 .openInputStream(
-                    uri,
+                    uri!!,
                 )!!
                 .use { it.readBytes().decodeToString() }
         assertTrue(text.startsWith("BEGIN:VCALENDAR\r\n"))
@@ -152,6 +157,54 @@ class CalendarExporterTest {
         land()
 
         assertNull(runBlocking { exporter.openUri(IcsLanguage.GERMAN) })
+    }
+
+    /** The threads that asked the clock while [block] ran with an exporter that computes on "compute-test". */
+    private fun threadsAskingTheClock(block: suspend (CalendarExporter) -> Unit): Set<String> {
+        val threads = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+        val spy =
+            object : Clock() {
+                override fun getZone() = clock.zone
+
+                override fun withZone(zone: java.time.ZoneId) = clock.withZone(zone)
+
+                override fun instant(): Instant {
+                    threads += Thread.currentThread().name.substringBefore(" @")
+                    return clock.instant()
+                }
+            }
+        val executor =
+            java.util.concurrent.Executors
+                .newSingleThreadExecutor { Thread(it, "compute-test") }
+        try {
+            val own =
+                CalendarExporter(
+                    repository,
+                    CalendarFileStore(context),
+                    spy,
+                    executor.asCoroutineDispatcher(),
+                )
+            runBlocking { block(own) }
+        } finally {
+            executor.shutdown()
+        }
+        return threads
+    }
+
+    @Test
+    fun `the count and the saved file are made on the compute dispatcher`() {
+        land()
+        twoTrips()
+
+        val threads =
+            threadsAskingTheClock {
+                assertEquals(2, it.tripCount())
+                it.save(TestDocuments.uriFor(file), IcsLanguage.GERMAN)
+            }
+
+        // The clock is asked while the days are counted and when the stamp is written.
+        assertEquals(setOf("compute-test"), threads)
+        assertTrue(file.readText().contains("BEGIN:VEVENT"))
     }
 
     @Test

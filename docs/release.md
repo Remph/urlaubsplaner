@@ -124,7 +124,10 @@ installable). On both emulators (API 30 and 37) and, with the maintainer's OK, t
 2. First start, choose a Land, enter the entitlement, mark days (tap and drag), bridge days,
    year and month view, the language (Deutsch, English, system).
 3. Widget, small and big: place both, change the colour twice, mark a day (the widget follows),
-   rotate the phone.
+   rotate the phone. Midnight: set the phone's clock to 23:59 (switch off automatic time), the
+   widget shows the new day within a few minutes (the alarm of `MidnightAlarm`); do it again
+   after a reboot (the first widget update or the boot broadcast sets the alarm again), and after
+   changing the time zone (the date of the widget follows the new zone).
 4. Backup: export a file, delete some days, import the file, check the days and the widget.
 5. Calendar export (ICS): save the file, "In Kalender öffnen".
 6. Einstellungen > Über die App: the three licence texts open, the credits are there.

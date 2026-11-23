@@ -23,8 +23,6 @@ import java.time.format.DateTimeParseException
  * that forgets a setting. The enum names are stored, so renaming one needs a migration.
  */
 
-private fun VacationDays.halves() = (days * 2).toInt()
-
 private fun splitList(text: String) = text.split(',').filter { it.isNotEmpty() }
 
 private inline fun <T> parseOrNull(block: () -> T): T? =
@@ -45,7 +43,7 @@ internal fun UserSettings.toEntity() =
         specialDays =
             schedule.specialDays.entries
                 .sortedBy { it.key }
-                .joinToString(",") { (day, value) -> "$day:${value.halves()}" },
+                .joinToString(",") { (day, value) -> "$day:${value.halves}" },
         suggestCarryOver = suggestCarryOver,
         grantedDays = grantedDays,
     )
@@ -92,8 +90,8 @@ private fun parseSpecialDays(text: String): Map<MonthDay, VacationDays> =
 internal fun YearEntitlement.toEntity() =
     YearEntitlementEntity(
         year = year,
-        halves = days.halves(),
-        carryOverHalves = carryOver.halves(),
+        halves = days.halves,
+        carryOverHalves = carryOver.halves,
         carryOverExpiry = carryOverExpiry.toString(),
         carryOverExpiryYears = carryOverExpiryYears,
     )

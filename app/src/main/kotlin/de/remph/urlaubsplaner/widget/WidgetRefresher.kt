@@ -83,6 +83,21 @@ class WidgetRefresher(
         scope.launch { redraw() }
     }
 
+    /**
+     * Draws the widgets again now without starting the data watch ([refresh] does start it, and
+     * its first value draws once more). For a process that was started only for a broadcast such
+     * as the midnight alarm. [onDone] runs when the draw has ended, also when it failed.
+     */
+    fun redrawNow(onDone: () -> Unit = {}) {
+        scope.launch {
+            try {
+                redraw()
+            } finally {
+                onDone()
+            }
+        }
+    }
+
     /** Marks what the widgets show as outdated, for a session that is still running. */
     fun invalidate() {
         _revision.update { it + 1 }

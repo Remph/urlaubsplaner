@@ -2,7 +2,9 @@
 <!-- The small widget: 2x1 (the target cells count from Android 12, before that the minimum size
      does), the small layout at any size, so it can be made wider and taller. The big one is
      widget_info_big.xml. Set up when placed, and again by long press from Android 12. The preview
-     is a render of the real widget with sample data (German and English, drawable-en-nodpi). -->
+     is a render of the real widget with sample data (German and English, drawable-en-nodpi). The update
+     period (4 hours) is only the safety net: the date is redrawn by the midnight alarm
+     (MidnightAlarm), the data by the app when it changes it. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="UnusedAttribute"
@@ -17,6 +19,6 @@
     android:targetCellWidth="2"
     android:targetCellHeight="1"
     android:resizeMode="horizontal|vertical"
-    android:updatePeriodMillis="1800000"
+    android:updatePeriodMillis="14400000"
     android:widgetCategory="home_screen"
     android:widgetFeatures="reconfigurable" />

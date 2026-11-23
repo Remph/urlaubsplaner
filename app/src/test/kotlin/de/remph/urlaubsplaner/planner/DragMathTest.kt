@@ -279,7 +279,7 @@ class DragMathTest {
                 scheme.primary,
                 rangeFill(role, look(holiday = true), colors, scheme, other),
             )
-            assertEquals(scheme.onPrimary, rangeText(role, look(), colors, scheme, other))
+            assertEquals(scheme.onPrimary, rangeTextColor(role, look(), colors, scheme, other))
         }
     }
 
@@ -288,7 +288,10 @@ class DragMathTest {
         val holiday = look(holiday = true)
 
         assertEquals(colors.holiday, rangeFill(RangeRole.INSIDE, holiday, colors, scheme, other))
-        assertEquals(colors.onHoliday, rangeText(RangeRole.INSIDE, holiday, colors, scheme, other))
+        assertEquals(
+            colors.onHoliday,
+            rangeTextColor(RangeRole.INSIDE, holiday, colors, scheme, other),
+        )
         assertTrue(rangeRing(RangeRole.INSIDE, holiday))
         assertFalse(rangeRing(RangeRole.INSIDE, look()))
         assertFalse(rangeRing(RangeRole.START, holiday))
@@ -302,14 +305,14 @@ class DragMathTest {
         )
         assertEquals(
             scheme.onPrimaryContainer,
-            rangeText(RangeRole.INSIDE, look(), colors, scheme, other),
+            rangeTextColor(RangeRole.INSIDE, look(), colors, scheme, other),
         )
     }
 
     @Test
     fun `a day outside the run keeps the colour its caller gives it but a holiday stays gold`() {
         assertEquals(other, rangeFill(RangeRole.AFTER_END, look(), colors, scheme, other))
-        assertEquals(other, rangeText(RangeRole.BEFORE_START, look(), colors, scheme, other))
+        assertEquals(other, rangeTextColor(RangeRole.BEFORE_START, look(), colors, scheme, other))
         assertEquals(
             colors.holiday,
             rangeFill(RangeRole.AFTER_END, look(holiday = true), colors, scheme, other),

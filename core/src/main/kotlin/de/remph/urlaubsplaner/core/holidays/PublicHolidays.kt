@@ -41,11 +41,13 @@ object PublicHolidays {
             .sortedBy { it.date }
     }
 
-    /** Whether [date] is a public holiday in [land]. Throws for years before [FIRST_SUPPORTED_YEAR]. */
+    /** Whether [date] is a public holiday in [land]; never, before [FIRST_SUPPORTED_YEAR]. */
     fun isHoliday(
         land: Bundesland,
         date: LocalDate,
         extras: Set<RegionalExtra> = emptySet(),
         optOuts: Set<RegionalOptOut> = emptySet(),
-    ): Boolean = of(land, date.year, extras, optOuts).any { it.date == date }
+    ): Boolean =
+        date.year >= FIRST_SUPPORTED_YEAR &&
+            of(land, date.year, extras, optOuts).any { it.date == date }
 }

@@ -108,16 +108,16 @@
     <string name="notice_damaged">Die Sicherung ist beschädigt und wurde nicht geladen. Es wurde nichts geändert.\n\nGenauer (auf Englisch): %1$s</string>
 
     <!-- Jahr leeren -->
-    <string name="clear_year_action">Urlaubstage von %1$d löschen</string>
-    <string name="clear_year_none">Für %1$d sind keine Tage markiert.</string>
-    <string name="clear_year_title">Urlaubstage von %1$d löschen?</string>
+    <string name="clear_year_action" tools:ignore="PluralsCandidate">Urlaubstage von %1$d löschen</string>
+    <string name="clear_year_none" tools:ignore="PluralsCandidate">Für %1$d sind keine Tage markiert.</string>
+    <string name="clear_year_title" tools:ignore="PluralsCandidate">Urlaubstage von %1$d löschen?</string>
     <plurals name="clear_year_body">
         <item quantity="one">Der markierte Tag von %2$d wird gelöscht. Urlaubsanspruch und Resturlaub bleiben.</item>
         <item quantity="other">Alle %1$d markierten Tage von %2$d werden gelöscht. Urlaubsanspruch und Resturlaub bleiben.</item>
     </plurals>
     <string name="clear_year_hint">Das lässt sich nicht rückgängig machen. Speichere vorher eine Sicherung unter Datensicherung.</string>
     <string name="clear_year_confirm">Löschen</string>
-    <string name="notice_year_cleared">Urlaubstage von %1$d gelöscht.</string>
+    <string name="notice_year_cleared" tools:ignore="PluralsCandidate">Urlaubstage von %1$d gelöscht.</string>
 
     <!-- Kalender-Export -->
     <string name="section_calendar_export">Kalender-Export</string>

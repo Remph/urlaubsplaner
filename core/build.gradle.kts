@@ -16,6 +16,8 @@ java {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // A new warning stops the build, so they do not pile up (tech audit 2026-11-21, finding 06).
+        allWarningsAsErrors.set(true)
     }
 }
 

@@ -2,7 +2,8 @@
 <!-- The big widget: 4x2 at least (the maintainer, 2026-10-26), so the next trip and the three figures always
      have the room the layout was made for; it can only grow from there (wider and taller on a
      bigger screen). Before Android 12 the minimum size decides the cells (4 x 2 here). The small
-     widget is widget_info.xml. The preview is a render of the real widget with sample data. -->
+     widget is widget_info.xml. The preview is a render of the real widget with sample data. The update
+     period (4 hours) is only the safety net, see widget_info.xml. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="UnusedAttribute"
@@ -17,6 +18,6 @@
     android:minResizeWidth="250dp"
     android:minResizeHeight="110dp"
     android:resizeMode="horizontal|vertical"
-    android:updatePeriodMillis="1800000"
+    android:updatePeriodMillis="14400000"
     android:widgetCategory="home_screen"
     android:widgetFeatures="reconfigurable" />

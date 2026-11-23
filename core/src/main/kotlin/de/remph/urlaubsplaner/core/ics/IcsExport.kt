@@ -52,7 +52,7 @@ class IcsExport(
         val lines =
             mutableListOf("BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:$PRODID", "CALSCALE:GREGORIAN")
         for (event in events(days, withStatus)) {
-            lines += event(event, days.marks, language, stamp)
+            lines += event(event, language, stamp)
         }
         lines += "END:VCALENDAR"
         return lines.joinToString(separator = "") { IcsText.fold(it) + IcsText.NEWLINE }
@@ -68,10 +68,20 @@ class IcsExport(
         output.flush()
     }
 
-    /** A trip, or the part of one whose days share a [confirmed] status; null: no status. */
+    /**
+     * A trip, or the part of one whose days share a [confirmed] status; null: no status.
+     * [halfDays] is how many of its days are half days, counted while the events are made.
+     */
     private class Event(
         val trip: Trip,
         val confirmed: Boolean?,
+        val halfDays: Int,
+    )
+
+    /** A marked day that costs something, with its cost. */
+    private class CostlyDay(
+        val date: LocalDate,
+        val cost: VacationDays,
     )
 
     /**
@@ -89,55 +99,66 @@ class IcsExport(
                 .year <= MAX_WRITABLE_YEAR
         }
 
+    /**
+     * The costly days are sorted once and the trips (also sorted, and each costly day lies in
+     * exactly one) take their days from it in turn, so the work grows with the number of marks and
+     * not with marks times trips (a backup at the size limit has 41,000 one-day trips).
+     */
     private fun allEvents(
         days: MarkedDays,
         withStatus: Boolean,
     ): List<Event> {
-        if (!withStatus) return calculator.trips(days.marks).map { Event(it, null) }
         val today = LocalDate.now(clock)
+        val costly =
+            days.marks
+                .mapNotNull { (date, mark) ->
+                    calculator
+                        .cost(
+                            date,
+                            mark,
+                        ).takeIf { it > VacationDays.ZERO }
+                        ?.let { CostlyDay(date, it) }
+                }.sortedBy { it.date }
+        var next = 0
         return calculator.trips(days.marks).flatMap { trip ->
-            val costly =
-                days.marks
-                    .filter { (date, mark) ->
-                        date in trip &&
-                            calculator.cost(date, mark) > VacationDays.ZERO
-                    }.toSortedMap()
+            val tripDays = mutableListOf<CostlyDay>()
+            while (next < costly.size && costly[next].date <= trip.end) tripDays += costly[next++]
+            if (!withStatus) return@flatMap listOf(Event(trip, null, halfDaysOf(tripDays)))
+
             val runs = mutableListOf<Event>()
-            var runDays = mutableListOf<LocalDate>()
+            var runDays = mutableListOf<CostlyDay>()
             var runConfirmed = false
 
             fun closeRun() {
                 if (runDays.isEmpty()) return
-                val cost =
-                    runDays.fold(VacationDays.ZERO) { sum, day ->
-                        sum +
-                            calculator.cost(day, costly.getValue(day))
-                    }
-                runs += Event(Trip(runDays.first(), runDays.last(), cost), runConfirmed)
+                val cost = runDays.fold(VacationDays.ZERO) { sum, day -> sum + day.cost }
+                runs +=
+                    Event(
+                        Trip(runDays.first().date, runDays.last().date, cost),
+                        runConfirmed,
+                        halfDaysOf(runDays),
+                    )
                 runDays = mutableListOf()
             }
-            for (date in costly.keys) {
-                val confirmed = days.statusOn(date, today) != MarkStatus.PLANNED
+            for (day in tripDays) {
+                val confirmed = days.statusOn(day.date, today) != MarkStatus.PLANNED
                 if (runDays.isNotEmpty() && confirmed != runConfirmed) closeRun()
                 runConfirmed = confirmed
-                runDays += date
+                runDays += day
             }
             closeRun()
             runs
         }
     }
 
+    private fun halfDaysOf(days: List<CostlyDay>) = days.count { it.cost == VacationDays.HALF }
+
     private fun event(
         event: Event,
-        marks: Map<LocalDate, DayMark>,
         language: IcsLanguage,
         stamp: String,
     ): List<String> {
         val trip = event.trip
-        val halfDays =
-            marks.count { (date, mark) ->
-                date in trip && calculator.cost(date, mark) == VacationDays.HALF
-            }
         return buildList {
             add("BEGIN:VEVENT")
             add("UID:urlaubsplaner-${trip.start}@$UID_DOMAIN")
@@ -147,7 +168,7 @@ class IcsExport(
             add("DTEND;VALUE=DATE:${DATE_FORMAT.format(trip.end.plusDays(1))}")
             event.confirmed?.let { add("STATUS:${if (it) "CONFIRMED" else "TENTATIVE"}") }
             add("SUMMARY:${IcsText.escape(summary(language))}")
-            add("DESCRIPTION:${IcsText.escape(description(trip.cost, halfDays, language))}")
+            add("DESCRIPTION:${IcsText.escape(description(trip.cost, event.halfDays, language))}")
             add("END:VEVENT")
         }
     }

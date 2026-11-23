@@ -92,7 +92,7 @@ class PlannerViewModelTest {
                 }
             }
 
-        assertEquals(2027, view?.year)
+        assertEquals(2027, view.year)
     }
 
     @Test

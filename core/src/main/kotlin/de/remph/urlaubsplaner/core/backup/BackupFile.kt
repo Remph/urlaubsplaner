@@ -8,6 +8,7 @@ import de.remph.urlaubsplaner.core.balance.VacationDays
 import de.remph.urlaubsplaner.core.balance.WorkSchedule
 import de.remph.urlaubsplaner.core.balance.YearEntitlement
 import de.remph.urlaubsplaner.core.holidays.Bundesland
+import de.remph.urlaubsplaner.core.holidays.PublicHolidays
 import de.remph.urlaubsplaner.core.holidays.RegionalExtra
 import de.remph.urlaubsplaner.core.holidays.RegionalOptOut
 import de.remph.urlaubsplaner.core.settings.UserSettings
@@ -89,6 +90,11 @@ object BackupFile {
     private const val MIN_YEAR = 1900
     private const val MAX_YEAR = 2999
 
+    // A marked day before the first year of the holiday rules cannot be priced, and the app never
+    // wrote one: the screens start in that year. Such a file is not one of ours, so it is refused
+    // like any other value out of range, and nothing invisible that cannot be removed gets in.
+    private const val MIN_MARK_YEAR = PublicHolidays.FIRST_SUPPORTED_YEAR
+
     private val ALLOWED_SPECIAL_DAYS = setOf(WorkSchedule.HEILIGABEND, WorkSchedule.SILVESTER)
 
     private val json = Json { prettyPrint = true }
@@ -112,8 +118,8 @@ object BackupFile {
                         data.entitlements.sortedBy { it.year }.map { entitlement ->
                             buildJsonObject {
                                 put("year", entitlement.year)
-                                put("halfDays", entitlement.days.halfDays())
-                                put("carryOverHalfDays", entitlement.carryOver.halfDays())
+                                put("halfDays", entitlement.days.halves)
+                                put("carryOverHalfDays", entitlement.carryOver.halves)
                                 put("carryOverExpiry", entitlement.carryOverExpiry.toString())
                                 put("carryOverExpiryYears", entitlement.carryOverExpiryYears)
                             }
@@ -225,7 +231,7 @@ object BackupFile {
                     settings.schedule.specialDays.entries.sortedBy { it.key }.map { (day, value) ->
                         buildJsonObject {
                             put("day", day.toString())
-                            put("halfDays", value.halfDays())
+                            put("halfDays", value.halves)
                         }
                     },
                 ),
@@ -312,7 +318,7 @@ object BackupFile {
         array.forEachIndexed { index, element ->
             val path = "markedDays[$index]"
             val entry = element.obj(path)
-            val date = entry.date("date", path)
+            val date = entry.date("date", path, MIN_MARK_YEAR)
             val name = entry.string("mark", path)
             val mark =
                 DayMark.entries.find { it.backupName() == name }
@@ -342,8 +348,6 @@ object BackupFile {
         when (this) {
             RegionalOptOut.MARIAE_HIMMELFAHRT_BAYERN -> "mariae-himmelfahrt-bayern"
         }
-
-    private fun VacationDays.halfDays() = (days * 2).toInt()
 
     // Reading helpers: every failure names the place in the file.
 
@@ -454,6 +458,7 @@ object BackupFile {
     private fun JsonObject.date(
         key: String,
         path: String,
+        minYear: Int,
     ): LocalDate {
         val date =
             try {
@@ -461,8 +466,8 @@ object BackupFile {
             } catch (_: DateTimeParseException) {
                 damaged("$path.$key is not a date like 2026-07-01")
             }
-        if (date.year !in MIN_YEAR..MAX_YEAR) {
-            damaged("$path.$key must be in the years $MIN_YEAR to $MAX_YEAR")
+        if (date.year !in minYear..MAX_YEAR) {
+            damaged("$path.$key must be in the years $minYear to $MAX_YEAR")
         }
         return date
     }
