@@ -179,7 +179,7 @@
     <string name="enter_vacation_days">Enter vacation days</string>
     <string name="overview_no_land">Choose your federal state first. The app then shows the public holidays and your vacation.</string>
     <string name="overview_no_entitlement" tools:ignore="PluralsCandidate">No vacation days are entered for %1$d yet.</string>
-    <string name="days_left_label">Days left %1$d</string>
+    <string name="days_left_label">%1$d: Days left</string>
     <string name="overbooked">More vacation entered than you are entitled to.</string>
     <string name="taken">Taken</string>
     <string name="planned">Planned</string>

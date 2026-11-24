@@ -8,7 +8,7 @@ releases only when the maintainer asks (`CLAUDE.md`).
 
 - Two sources: **F-Droid** (preferred) and an **APK on GitHub**. No Google Play account for now.
 - First public version is **0.9.0**. Version scheme: `versionCode = major * 10000 + minor * 100 +
-  patch`, so 0.9.0 is 900 and 1.0.0 is 10000. Both are set in `app/build.gradle.kts`.
+  patch`, so 0.9.0 is 900, 1.0.0 is 10000 and 1.0.1 is 10001. Both are set in `app/build.gradle.kts`.
 - The GitHub APK is signed with the maintainer's **own release key**, made on their PC. F-Droid signs its own
   build with its own key, so the two sources cannot update each other: whoever switches from one to
   the other uninstalls first (back up through Einstellungen > Datensicherung before).
@@ -181,7 +181,7 @@ Quick Start Guide). `f-droid.org` itself is not reachable from the cloud, `gitla
 
 **What is ready in this repo** (`fastlane/metadata/android/`): `de-DE` and `en-US` with `title.txt`,
 `short_description.txt` (under 80 characters, no trailing dot), `full_description.txt`,
-`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100, 1101, 10000), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
+`changelogs/<versionCode>.txt` (900, 901, 902, 1000, 1001, 1100, 1101, 10000, 10001), `images/icon.png` (512 px) and four screenshots in `images/phoneScreenshots/`.
 F-Droid requires `en-US`; `de-DE` is extra. Descriptions use only the HTML tags F-Droid allows.
 
 **What F-Droid checks**: free licence (GPL-3.0-or-later), only free dependencies and tools (no Google Play

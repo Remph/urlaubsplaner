@@ -180,7 +180,7 @@
     <string name="enter_vacation_days">Urlaubstage eintragen</string>
     <string name="overview_no_land">Wähle zuerst dein Bundesland. Danach zeigt die App die Feiertage und deinen Urlaub.</string>
     <string name="overview_no_entitlement" tools:ignore="PluralsCandidate">Für %1$d sind noch keine Urlaubstage eingetragen.</string>
-    <string name="days_left_label">Tage übrig %1$d</string>
+    <string name="days_left_label">%1$d: Tage übrig</string>
     <string name="overbooked">Mehr Urlaub eingetragen, als dir zusteht.</string>
     <string name="taken">Genommen</string>
     <string name="planned">Geplant</string>
